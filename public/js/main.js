@@ -180,12 +180,12 @@ async function batDauChoi() {
   audio.unlock();
   const canvas = $('canh');
   // alpha: the cinema's YouTube player sits BEHIND the canvas and shows through a hole (see rooms/cinema.js)
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: devicePixelRatio < 1.5, powerPreference: 'high-performance', alpha: true });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', alpha: true }); // smooth edges on every screen (it used to be off on Retina screens)
   renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(doPhanGiai); renderer.setSize(innerWidth, innerHeight, false);
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.BasicShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; // filtered shadow edges; weak machines fall back to the blocky, cheaper kind (doFps)
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 900);
+  const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.25, 900); // near 0.25 (was 0.1): 2.5x finer depth, so thin ground layers do not flicker when seen from far away
   const hemi = new THREE.HemisphereLight('#EAF4FF', '#9CB98A', 1.25); scene.add(hemi);
   const sun = new THREE.DirectionalLight('#FFF1D6', 1.7);
   sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
@@ -477,20 +477,27 @@ function buoc(dt, t) {
 const tam2 = new THREE.Color();
 function gocTien(a, b, k) { let d = b - a; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return a + d * k; }
 
+// The resolution never drops below these (in screen points): sharp screens keep at least 1, so the picture is never coarser than the screen's own grid.
+const SAN_PG = devicePixelRatio >= 1.5 ? 1 : 0.75; const SAN_PG_CUOI = devicePixelRatio >= 1.5 ? 0.75 : 0.6;
 function doFps(t) { // Top1's automatic quality: weak machines get a lower resolution / cheaper shadows to stay above 30 fps
   if (!batDauLuc) batDauLuc = t;
-  if (t - batDauLuc < 1.5) return;
+  const nghi = t - (fpsDem.truoc ?? t); fpsDem.truoc = t;
+  if (document.hidden || nghi > 0.4) { fpsDem.n = 0; fpsDem.t0 = 0; return; } // the tab was in the background or the page stalled: that says nothing about this computer's speed
+  if (t - batDauLuc < 4) return;                                              // the first seconds (building the world, compiling shaders) are always slow
   fpsDem.n++; if (!fpsDem.t0) fpsDem.t0 = t;
   if (t - fpsDem.t0 >= (t - batDauLuc < 6 ? 0.5 : 1)) {
     const f = fpsDem.n / (t - fpsDem.t0); fpsDem.n = 0; fpsDem.t0 = t;
     fpsDem.ds.push(f); if (fpsDem.ds.length > 5) fpsDem.ds.shift();
     state.fps = Math.round(fpsDem.ds.reduce((a, b) => a + b, 0) / fpsDem.ds.length);
     const datPG = () => { R.renderer.setPixelRatio(doPhanGiai); R.renderer.setSize(innerWidth, innerHeight, false); };
-    if (f < 29 && doPhanGiai <= 0.75 && R.sun.shadow.mapSize.x > 1024) { R.sun.shadow.mapSize.set(1024, 1024); R.sun.shadow.map?.dispose(); R.sun.shadow.map = null; chatLuong = 2; }
+    if (f < 29 && doPhanGiai <= SAN_PG && R.sun.shadow.mapSize.x > 1024) {
+      R.sun.shadow.mapSize.set(1024, 1024); R.sun.shadow.map?.dispose(); R.sun.shadow.map = null; chatLuong = 2;
+      R.renderer.shadowMap.type = THREE.BasicShadowMap; R.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
+    }
     else if (f < 29 && chatLuong === 2 && ++lanCham >= 3 && t - batDauLuc > 8) { R.renderer.shadowMap.autoUpdate = false; Object.assign(R.sun.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24 }); R.sun.shadow.camera.updateProjectionMatrix(); chatLuong = 3; }
-    else if (f < 29 && chatLuong === 3 && doPhanGiai > 0.6 && ++lanCham >= 3) { doPhanGiai = 0.6; datPG(); chatLuong = 4; }
-    else if (f < 29 && doPhanGiai > 0.75) { doPhanGiai = Math.max(0.75, Math.floor(doPhanGiai * Math.sqrt(f / 34) * 4) / 4); datPG(); }
-    else if (f >= 29) { lanCham = 0; if (f > 55 && doPhanGiai < Math.min(devicePixelRatio, 2)) { doPhanGiai = Math.min(Math.min(devicePixelRatio, 2), doPhanGiai + 0.25); datPG(); } }
+    else if (f < 29 && chatLuong === 3 && doPhanGiai > SAN_PG_CUOI && ++lanCham >= 3) { doPhanGiai = SAN_PG_CUOI; datPG(); chatLuong = 4; }
+    else if (f < 29 && doPhanGiai > SAN_PG) { doPhanGiai = Math.max(SAN_PG, Math.floor(doPhanGiai * Math.sqrt(f / 34) * 4) / 4); datPG(); }
+    else if (f >= 29) { lanCham = 0; if (f > 50 && doPhanGiai < Math.min(devicePixelRatio, 2)) { doPhanGiai = Math.min(Math.min(devicePixelRatio, 2), doPhanGiai + 0.25); datPG(); } } // back up to full sharpness when there is speed to spare
   }
 }
 

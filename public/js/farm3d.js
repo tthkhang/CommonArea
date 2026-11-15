@@ -20,7 +20,8 @@ export function buildFarm(ctx, h) {
   {
     const n = 90, m = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 0.02, 14), new THREE.MeshToonMaterial({ color: '#ffffff', gradientMap: gradient }), n);
     const o = new THREE.Object3D(), c = new THREE.Color();
-    for (let i = 0; i < n; i++) { o.position.set(GB.minX + rand() * W, 0.06, GB.minZ + rand() * D); const s = 1.2 + rand() * 2.4; o.scale.set(s, 1, s * (0.6 + rand() * 0.6)); o.updateMatrix(); m.setMatrixAt(i, o.matrix); m.setColorAt(i, c.set(i % 2 ? '#8bdc70' : '#6fc257')); }
+    // the light patches lie a little higher than the dark ones: two colours at exactly the same height flicker in stripes where they overlap
+    for (let i = 0; i < n; i++) { o.position.set(GB.minX + rand() * W, i % 2 ? 0.067 : 0.054, GB.minZ + rand() * D); const s = 1.2 + rand() * 2.4; o.scale.set(s, 1, s * (0.6 + rand() * 0.6)); o.updateMatrix(); m.setMatrixAt(i, o.matrix); m.setColorAt(i, c.set(i % 2 ? '#8bdc70' : '#6fc257')); }
     m.receiveShadow = true; scene.add(m);
   }
   // wooden fence around the island
@@ -303,7 +304,7 @@ export function buildFarm(ctx, h) {
   sign('FISH TANK', 1.8, 0.6, '#0277bd', '#ffffff', T.x, 0.95, T.z + T.r + 0.48, 0);
 
   // ---------- orchard ----------
-  GW.trees.forEach(([x, z]) => { cyl(1.5, 1.6, 0.08, '#8d6e63', x, 0.04, z).castShadow = false; cyl(1.7, 1.7, 0.05, '#a5d6a7', x, 0.02, z).castShadow = false; });
+  GW.trees.forEach(([x, z]) => { cyl(1.5, 1.6, 0.08, '#8d6e63', x, 0.075, z).castShadow = false; cyl(1.7, 1.7, 0.05, '#a5d6a7', x, 0.07, z).castShadow = false; }); // above the grass patches (tops at 0.115 and 0.095)
   woodFence(-391.5, 13.5, -383, 13.5, '#c79a6b', '#8d6e63'); woodFence(-379, 13.5, -370.5, 13.5, '#c79a6b', '#8d6e63');
   sign('ORCHARD', 2.4, 0.55, '#2e7d32', '#ffffff', -381, 1.5, 13.3, 0);
 
