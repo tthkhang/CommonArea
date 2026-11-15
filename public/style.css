@@ -236,7 +236,14 @@ body:has(#hud .vc-panel:not(.hidden)) :is(#chat, .cot-phai, .cot-trai, #side) { 
 .vc-form label.chk { flex-direction: row; align-items: center; }
 .vc-form input[type=number], .vc-form select { font: 700 15px "Nunito", sans-serif; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 12px; padding: 7px 10px; }
 .merchant { text-align: center; } .merchant .big { font-size: 46px; } .merchant > div { margin: 6px 0; }
-#vcFish { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); width: min(460px, 90vw); padding: 14px; text-align: center; }
+/* fishing mini-game: a vertical meter. Keep the fish (🐟) inside the green zone; the bar on the right fills while you do. (These rules were missing, so the meter was invisible.) */
+#vcFish { position: absolute; left: auto; right: 84px; top: 22%; transform: none; width: min(300px, 80vw); padding: 14px; text-align: center; z-index: 7; }
+#vcFish .vbox { display: flex; gap: 12px; justify-content: center; margin: 10px 0; }
+#vcFish .vtrack { position: relative; width: 52px; height: 240px; border-radius: 14px; border: 3px solid var(--ink); background: linear-gradient(#6EC1EE, #2F78AA); overflow: hidden; }
+#vcFish .vzone { position: absolute; left: 3px; right: 3px; background: rgba(53,194,122,.88); border: 2px solid var(--ink); border-radius: 8px; box-shadow: 0 0 10px rgba(53,194,122,.8); }
+#vcFish .vfish { position: absolute; left: 0; right: 0; text-align: center; font-size: 26px; line-height: 1; transform: translateY(50%); }
+#vcFish .vprog { position: relative; width: 18px; height: 240px; border-radius: 9px; border: 3px solid var(--ink); background: #E4DEF3; overflow: hidden; }
+#vcFish .vprog > div { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(#FFC43D, #35C27A); }
 #vcFish .ttl { font-weight: 800; }
 #vcFish .track { position: relative; height: 26px; margin: 12px 0 8px; border-radius: 13px; border: 3px solid var(--ink); background: #E4DEF3; overflow: hidden; }
 #vcFish .zone { position: absolute; top: 0; bottom: 0; background: var(--good); }
@@ -261,7 +268,17 @@ body:has(#hud .vc-panel:not(.hidden)) :is(#chat, .cot-phai, .cot-trai, #side) { 
   #chat { bottom: calc(186px + var(--bar-h, 102px) + var(--status-h, 0px)); }
   #side-left { max-height: calc(100vh - 430px - var(--bar-h, 102px) - var(--status-h, 0px)); }
   /* "Stand up" and the hint use the free corner to the right of the joystick */
-  #nut-dung { left: auto; right: 12px; bottom: max(92px, env(safe-area-inset-bottom)); transform: none; min-height: 46px; padding: 8px 16px; }
+  #nut-dung { left: auto; right: 12px; bottom: max(104px, env(safe-area-inset-bottom)); transform: none; min-height: 46px; padding: 8px 16px; }
+  /* fishing on a phone: one big button for Cast / STRIKE / TAP in the free corner beside the stick, and a compact meter on the right */
+  #hud #vcReel { position: fixed; right: 12px; bottom: max(24px, env(safe-area-inset-bottom)); left: 160px; height: 76px; z-index: 8; pointer-events: auto; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
+    font: 800 24px/1 "Baloo 2", "Nunito", sans-serif; color: var(--ink); background: var(--accent); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 6px 0 var(--ink); cursor: pointer; }
+  #vcForestVol input { width: 62px; } /* so the fishing meter on the right does not cover it */
+  #hud #vcReel.hot { background: #FF7043; color: #fff; animation: reel-pulse .5s ease-in-out infinite alternate; }
+  #hud #vcReel:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--ink); }
+  #vcFish { top: 96px; right: 12px; width: 150px; padding: 10px 8px; }
+  #vcFish .ttl { display: none; }
+  #vcFish .vbox { margin: 4px 0; } #vcFish .vtrack, #vcFish .vprog { height: 200px; }
+  #vcFish .st { font-size: 12px; }
   #nut-dung:active { transform: translateY(4px) scale(.97); }
   #hint { left: 160px; right: 12px; bottom: 30px; transform: none; text-align: center; white-space: normal; }
   /* no E key on a phone: when there is something to do, the hint is a button to tap */
@@ -271,6 +288,9 @@ body:has(#hud .vc-panel:not(.hidden)) :is(#chat, .cot-phai, .cot-trai, #side) { 
   #hint.bam::before { content: "👆"; font-size: 22px; line-height: 1; }
   #hint.bam:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
 }
+@keyframes reel-pulse { from { transform: scale(1); } to { transform: scale(1.04); } }
+#vcReel { display: none; }
+@media (max-width: 767px) { #hud #vcReel { display: block; } #hud #vcReel.hidden { display: none; } }
 @keyframes menu-vao { from { opacity: 0; transform: translateY(-8px); } }
 @media (max-width: 900px) { #vcBar { bottom: 170px; flex-wrap: wrap; justify-content: center; width: max-content; } #vcStatus { bottom: 250px; } } /* max-content: a bar centred with left: 50% would otherwise shrink to half the screen and stack one button per row */
 @media (min-width: 768px) and (max-width: 900px) { #chat .log { max-height: 92px; } } /* the Xu bar is raised at this width: the chat stays below it */

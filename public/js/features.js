@@ -589,7 +589,9 @@ export function initFeatures(ctx, extras) {
   // ===================================================================== fishing (v5: sit on a chair, cast, shadow swims up, strike, tap to hold the fish in the green, show the catch)
   const fish = { phase: 'idle', spot: -1, t: 0, biteAt: 0, tier: 1, shadowK: 1, game: null, hold: null, cast: null };
   const MOVE = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
-  const moveKeyDown = () => !ctx.typing() && MOVE.some((k) => ctx.keys.has(k));
+  const moveKeyDown = () => !ctx.typing() && (MOVE.some((k) => ctx.keys.has(k)) || !!(ctx.joyOn && ctx.joyOn()));
+  const touchUI = () => innerWidth < 768; // phone layout: no keyboard, so fishing gets its own big button (#vcReel) and a Stand up button
+  const REEL = { seated: 'Cast 🎣', bite: 'STRIKE! ❗', game: 'TAP! TAP! 🐟' }; // what the big button says in each fishing phase
   const bobber = new THREE.Group(); sphere(0.14, '#ffffff', 0, 0.04, 0, bobber); sphere(0.15, '#e53935', 0, 0.17, 0, bobber); cyl(0.02, 0.02, 0.25, '#212121', 0, 0.35, 0, bobber); bobber.visible = false; scene.add(bobber);
   const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
   const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: '#f5f5f5' })); line.visible = false; line.frustumCulled = false; scene.add(line);
@@ -599,6 +601,7 @@ export function initFeatures(ctx, extras) {
   shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.2; scene.add(shadow);
   const splashes = [];
   function splash(x, z, big) { for (let i = 0; i < (big ? 2 : 1); i++) { const r = new THREE.Mesh(new THREE.RingGeometry(0.15, 0.24, 20), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false })); r.rotation.x = -Math.PI / 2; r.position.set(x, 0.22, z); scene.add(r); splashes.push({ m: r, t: -i * 0.2 }); } blip([big ? 220 : 340, 160], 0.05, 0.07); }
+  ui.fishGame.addEventListener('pointerdown', (e) => { if (fish.phase === 'game') { e.preventDefault(); fishHit(); } }); // tap anywhere on the meter
   ui.fishGame.innerHTML = '<div class="ttl">🎣 Keep the fish in the green: tap <kbd>E</kbd> / <kbd>Space</kbd> again and again!</div><div class="vbox"><div class="vtrack"><div class="vzone"></div><div class="vfish">🐟</div></div><div class="vprog"><div></div></div></div><div class="st"></div>';
   const tipWorld = () => { const p = me(); p.obj.updateMatrixWorld(true); return rodPiv.localToWorld(new THREE.Vector3(0, 2.9, 0)); };
   // a fishing spot (WORLD.fishSpots): a chair by the forest lake / stream (you sit), or a dock (you stand; none since the Garden Room was removed)
@@ -610,7 +613,7 @@ export function initFeatures(ctx, extras) {
   function sitAt(i) {
     const p = me(), s = WORLD.fishSpots[i]; if (!p || !s) return;
     p.x = p.tx = s.x; p.z = p.tz = s.z; p.ry = p.try = s.ry; p.pose = s.stand ? null : 'sit';
-    fish.phase = 'seated'; fish.spot = i;
+    fish.phase = 'seated'; fish.spot = i; if (touchUI()) $('#nut-dung').hidden = false;
     send({ type: 'move', x: p.x, z: p.z, ry: p.ry, moving: false });
     if (rodPiv.parent !== p.obj) p.obj.add(rodPiv); rodPiv.visible = true; rodPiv.rotation.set(0.55, 0, 0);
   }
@@ -622,7 +625,7 @@ export function initFeatures(ctx, extras) {
     rodPiv.visible = false;
     const s = WORLD.fishSpots[fish.spot];
     if (p) { p.pose = null; if (s) { p.x = p.tx = s.x - Math.sin(s.ry) * 1.3; p.z = p.tz = s.z - Math.cos(s.ry) * 1.3; send({ type: 'move', x: p.x, z: p.z, ry: p.ry, moving: false }); } }
-    fish.phase = 'idle'; fish.spot = -1;
+    fish.phase = 'idle'; fish.spot = -1; if (!(p && p.seat)) $('#nut-dung').hidden = true;
   }
   function stopFishing() { if (fish.phase !== 'idle') standUp(); }
   function startCast() {
@@ -655,7 +658,14 @@ export function initFeatures(ctx, extras) {
     floatText(`${F.name} ${f.size} cm`, '#4dd0e1'); blip([660, 880, 1100], 0.08, 0.12);
     toast(`🎣 ${F.name}, ${f.size} cm (${F.rarity})! Added to your Bag.`);
   }
+  function paintReel() {
+    const label = touchUI() ? REEL[fish.phase] : null;
+    ui.reelBtn.classList.toggle('hidden', !label);
+    if (label && ui.reelBtn.textContent !== label) { ui.reelBtn.textContent = label; ui.reelBtn.classList.toggle('hot', fish.phase !== 'seated'); }
+  }
+  ui.reelBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); if (REEL[fish.phase]) fishingE(); }); // cast / strike / reel: the same as pressing E
   function updateFishing(dt, t) {
+    paintReel();
     for (let i = splashes.length - 1; i >= 0; i--) { const s = splashes[i]; s.t += dt; const k = Math.max(0, s.t) / 0.9; s.m.scale.setScalar(1 + k * 4); s.m.material.opacity = 0.8 * (1 - k); if (k >= 1) { scene.remove(s.m); splashes.splice(i, 1); } }
     if (fish.phase === 'idle') return;
     const p = me(); if (!p) return;
@@ -685,8 +695,8 @@ export function initFeatures(ctx, extras) {
         shadow.scale.set(0.55 * fish.shadowK, 1.5 * fish.shadowK, 1); shadow.material.opacity = Math.min(0.42, 0.42 * k * 3);
         if (left < 1100) by = 0.2 - Math.abs(Math.sin(t * 18)) * 0.07; // nibbling
       }
-      if (fish.phase === 'waiting' && fish.biteAt && left <= 0) { fish.phase = 'bite'; fish.biteT = now; splash(s.bx, s.bz, true); floatText('❗ A bite! Press E', '#ff7043'); blip([700, 500, 900], 0.06, 0.15); }
-      if (fish.phase === 'bite') { by = 0.02; if (now - fish.biteT > 1300) { send({ type: 'fishReel', ok: false }); fish.phase = 'result'; } }
+      if (fish.phase === 'waiting' && fish.biteAt && left <= 0) { fish.phase = 'bite'; fish.biteT = now; splash(s.bx, s.bz, true); floatText(touchUI() ? '❗ A bite! Tap STRIKE' : '❗ A bite! Press E', '#ff7043'); blip([700, 500, 900], 0.06, 0.15); }
+      if (fish.phase === 'bite') { by = 0.02; if (now - fish.biteT > (touchUI() ? 2400 : 1300)) { send({ type: 'fishReel', ok: false }); fish.phase = 'result'; } }
       if (fish.phase === 'game') {
         by = 0.12 + Math.sin(t * 20) * 0.06; rodPiv.rotation.x = 0.5 + Math.sin(t * 14) * 0.12;
         const g = fish.game;
@@ -721,7 +731,7 @@ export function initFeatures(ctx, extras) {
     switch (fish.phase) {
       case 'seated': return '<kbd>E</kbd> cast your line 🎣 · <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> ' + ((WORLD.fishSpots[fish.spot] || {}).stand ? 'put the rod away' : 'stand up');
       case 'casting': return '🎣 Casting…';
-      case 'waiting': return 'Waiting… watch the shadow swim up to the float · do not strike too early!';
+      case 'waiting': return touchUI() ? '🎣 Wait for the bite… do not strike early!' : 'Waiting… watch the shadow swim up to the float · do not strike too early!';
       case 'bite': return '❗ <kbd>E</kbd> STRIKE NOW!';
       case 'game': return 'Tap <kbd>E</kbd> / <kbd>Space</kbd> again and again to keep the fish in the green';
       case 'hold': return '🐟 Caught it!';
@@ -831,6 +841,7 @@ export function initFeatures(ctx, extras) {
   function hint(p) {
     if (!state.profile) return '';
     if (act) return act.type === 'climb' ? (act.phase === 'top' ? '🚩 On top! <kbd>E</kbd> or <kbd>WASD</kbd> to climb down' : '🧗 Climbing…') : '🎠 ' + PLAY_NAMES[act.type][1] + ' · <kbd>WASD</kbd> to get off';
+    if (touchUI() && REEL[fish.phase]) return ''; // the big button names the action
     const fh = fishingHint(); if (fh) return fh;
     if (state.area !== 'garden' && !p.room) { const st = nearFood(p); if (st) return '<kbd>E</kbd> buy food and drinks at the ' + esc(st.name) + ' 🍽️'; const pl = nearPlay(p); if (pl) return '<kbd>E</kbd> ' + PLAY_NAMES[pl.type][0] + ' 🎠'; }
     if (state.area === 'campus') {
@@ -1630,15 +1641,16 @@ export function initFeatures(ctx, extras) {
     const afk = document.createElement('div'); afk.className = 'modal hidden'; afk.innerHTML = `<div class="panel"><h3>Are you still there? 👀</h3><p>We haven't seen any activity from you for a while, so Xu earning is paused.</p><div class="row" style="justify-content:flex-end"><button class="primary">Still studying!</button></div></div>`;
     document.body.appendChild(afk);
     const fade = document.createElement('div'); fade.id = 'vcFade'; fade.innerHTML = '<div class="leaves">🍃 🍂 🍃 🌿 🍃 🍂</div><div class="t"></div>'; document.body.appendChild(fade);
+    const reelBtn = document.createElement('button'); reelBtn.id = 'vcReel'; reelBtn.type = 'button'; reelBtn.className = 'hidden'; reelBtn.setAttribute('aria-label', 'Fishing action'); document.getElementById('hud').appendChild(reelBtn);
     const fishGame = document.createElement('div'); fishGame.id = 'vcFish'; fishGame.className = 'panel hidden';
     fishGame.innerHTML = '<div class="ttl">🎣 Reel it in! Press <kbd>E</kbd> / <kbd>Space</kbd> when the needle is in the green</div><div class="track"><div class="zone"></div><div class="needle"></div></div><div class="st"></div>';
     document.getElementById('hud').appendChild(fishGame);
-    return { hud, shop, bag, pond, earn, seeds, market, merchantP, pots, care, board, quiz, food, house, pen, gate, afk, fade, fishGame, friends, friendsBtn: hud.querySelector('#vcFriends'), moreBtn: hud.querySelector('#vcMore'), bar: hud.querySelector('#vcBar'),
+    return { hud, shop, bag, pond, earn, seeds, market, merchantP, pots, care, board, quiz, food, house, pen, gate, afk, fade, fishGame, reelBtn, friends, friendsBtn: hud.querySelector('#vcFriends'), moreBtn: hud.querySelector('#vcMore'), bar: hud.querySelector('#vcBar'),
       boostBtn: hud.querySelector('#vcBoost'), likeBtn: hud.querySelector('#vcLike'), backBtn: hud.querySelector('#vcBack'), status: hud.querySelector('#vcStatus'), xu: hud.querySelector('#vcXu'), cap: hud.querySelector('#vcCap'), gardenBtn: hud.querySelector('#vcGarden'), bagBtn: hud.querySelector('#vcBag'), earnBtn: hud.querySelector('#vcEarn'), carry: hud.querySelector('#vcCarry'), forestVol: hud.querySelector('#vcForestVol') };
   }
 
   return {
-    onMessage, update, interact, hint,
+    onMessage, update, interact, hint, stopFishing: () => stopFishing(),
     blockMove: () => modalOpen || fish.phase !== 'idle' || !!act || ui.fade.classList.contains('on') || garden.busy(),
     yOff: () => (state.area === 'garden' ? garden.yOff() : act ? act.y : 0),
     elevated: () => state.area === 'garden' && garden.elevated(),

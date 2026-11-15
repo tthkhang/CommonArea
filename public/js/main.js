@@ -215,7 +215,7 @@ async function batDauChoi() {
   // ---- campus-game-v4: scenery (world2.js) + gameplay (features.js), drawn with Top1's toon kit
   const kit = makeKit(scene);
   const fctx = {
-    scene, camera, sun, WORLD, state, Room, audio, cam, canvas, keys, typing, project, esc, toast,
+    scene, camera, sun, WORLD, state, Room, audio, cam, canvas, keys, typing, project, esc, toast, joyOn: () => joy.on,
     $: qs, ...kit, clickable: [], labelsEl: $('labels'),
     send: (m) => net.send(m), me: () => ME, serverNow: () => net.serverNow(),
     addBoxCol: (minX, maxX, minZ, maxZ) => VC.push({ loai: 'hop', x1: minX, x2: maxX, z1: minZ, z2: maxZ }),
@@ -744,7 +744,7 @@ function ganDieuKhien() {
   $('ban-do').addEventListener('click', (e) => { if (e.target.id === 'ban-do') $('ban-do').hidden = true; });
   $('nut-toan-canh').addEventListener('click', () => { cam.toanCanh = !cam.toanCanh; $('nut-toan-canh').style.background = cam.toanCanh ? 'var(--accent)' : ''; });
   $('nut-pov').addEventListener('click', doiPov);
-  $('nut-dung').addEventListener('click', () => { if (ME.seat) dungLen(); });
+  $('nut-dung').addEventListener('click', () => { if (ME.seat) dungLen(); else F.stopFishing(); }); // phones: the same button also gets you up from a fishing chair
   $('dong-bang').addEventListener('click', dongBang);
   $('nut-tuy-chinh-2').addEventListener('click', () => { phim.w = phim.a = phim.s = phim.d = false; customizer.setName(profile.name); customizer.open(); });
   $('nut-emote').addEventListener('click', () => wheel.toggle());
