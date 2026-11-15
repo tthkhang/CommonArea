@@ -57,7 +57,7 @@ export function initFeatures(ctx, extras) {
     if (area === 'garden') { extras.setGardenOwner(state.visit ? String(state.visit.owner).replace(/[’']s garden$/i, '') : ((me() || {}).name || 'My')); garden.rebuild(); } else state.visit = null; // the gate sign names whose farm this is
     stopFishing(true);
     const ci = $('#chatInput'); // forest = Local chat only (GDD §4)
-    if (ci) ci.placeholder = area === 'forest' ? '🌲 Local chat — only people nearby / at your table can see it' : 'Press Enter to chat with everyone';
+    if (ci) ci.placeholder = area === 'forest' ? '🌲 Local chat — only people nearby / at your table can see it' : innerWidth < 768 ? 'Tap to chat with everyone' : 'Press Enter to chat with everyone';
     renderHud();
   }
   function snapCamera(x, z) {
@@ -95,6 +95,17 @@ export function initFeatures(ctx, extras) {
   const visitBtn = document.createElement('button'); visitBtn.textContent = '🌱 Visit garden'; visitBtn.className = 'primary';
   $('#playerCard .btns').prepend(visitBtn);
   visitBtn.onclick = () => { const q = state.players.get(state.selectedPlayer); if (!q || !q.ownGid) return; $('#playerCard').classList.add('hidden'); visitGarden(q.ownGid, q.name); };
+  // ---- phones: Bag, Earnings and Friends fold away behind the ⋯ button (style.css shows it only on phone widths); the choice is remembered
+  let barOpen = false; try { barOpen = localStorage.getItem('top1server-bar') === 'open'; } catch (e) { /* storage blocked */ }
+  const setBar = (open) => { barOpen = open; ui.bar.classList.toggle('gon', !open); ui.moreBtn.setAttribute('aria-expanded', String(open)); ui.moreBtn.textContent = open ? '▾' : '⋯'; };
+  setBar(barOpen);
+  // the chat and the status line stack on top of the bar on phones: tell the style sheet how tall the bar and the status line are right now
+  if (typeof ResizeObserver === 'function') {
+    const measure = () => { document.body.style.setProperty('--bar-h', ui.bar.offsetHeight + 'px'); document.body.style.setProperty('--status-h', (ui.status.offsetHeight ? ui.status.offsetHeight + 8 : 0) + 'px'); };
+    const ro = new ResizeObserver(measure); ro.observe(ui.bar); ro.observe(ui.status); measure();
+  }
+  ui.moreBtn.onclick = () => { setBar(!barOpen); try { localStorage.setItem('top1server-bar', barOpen ? 'open' : 'shut'); } catch (e) { /* storage blocked */ } };
+
   // ---- friends: ask on a player's card, answer in the Friends panel, visit their garden from the list (also when they are offline) ----
   state.friends = { list: [], requests: [] };
   const asked = new Map(); // player id -> when I sent them a request
@@ -1592,6 +1603,7 @@ export function initFeatures(ctx, extras) {
       <div id="vcBar" class="panel">
         <div class="xu" title="Your Xu"><span class="coin"></span><b id="vcXu">0</b><small id="vcCap"></small></div>
         <button id="vcGarden" class="primary">🌱 My Garden</button>
+        <button id="vcMore" aria-label="More buttons" aria-expanded="false" title="Show or hide Bag, Earnings and Friends">⋯</button>
         <button id="vcBag" title="Bag (B)">🎒 Bag</button>
         <button id="vcEarn" title="Today's earnings">📒 Earnings</button>
         <button id="vcFriends" title="Friends: visit their gardens">👥 Friends<span class="n hidden"></span></button>
@@ -1621,7 +1633,7 @@ export function initFeatures(ctx, extras) {
     const fishGame = document.createElement('div'); fishGame.id = 'vcFish'; fishGame.className = 'panel hidden';
     fishGame.innerHTML = '<div class="ttl">🎣 Reel it in! Press <kbd>E</kbd> / <kbd>Space</kbd> when the needle is in the green</div><div class="track"><div class="zone"></div><div class="needle"></div></div><div class="st"></div>';
     document.getElementById('hud').appendChild(fishGame);
-    return { hud, shop, bag, pond, earn, seeds, market, merchantP, pots, care, board, quiz, food, house, pen, gate, afk, fade, fishGame, friends, friendsBtn: hud.querySelector('#vcFriends'),
+    return { hud, shop, bag, pond, earn, seeds, market, merchantP, pots, care, board, quiz, food, house, pen, gate, afk, fade, fishGame, friends, friendsBtn: hud.querySelector('#vcFriends'), moreBtn: hud.querySelector('#vcMore'), bar: hud.querySelector('#vcBar'),
       boostBtn: hud.querySelector('#vcBoost'), likeBtn: hud.querySelector('#vcLike'), backBtn: hud.querySelector('#vcBack'), status: hud.querySelector('#vcStatus'), xu: hud.querySelector('#vcXu'), cap: hud.querySelector('#vcCap'), gardenBtn: hud.querySelector('#vcGarden'), bagBtn: hud.querySelector('#vcBag'), earnBtn: hud.querySelector('#vcEarn'), carry: hud.querySelector('#vcCarry'), forestVol: hud.querySelector('#vcForestVol') };
   }
 

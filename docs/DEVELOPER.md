@@ -53,6 +53,8 @@ For a quick test with friends without any host, run the server on your own compu
 | **W A S D / arrows**, or click the ground | walk |
 | **E** | use what is next to you: seats, shop counter, fishing chairs, market, leaderboard, trash, mirror, music corner, food carts, playground, animals, the house |
 | **Space** | jump · **G** emote wheel (1–8) · **B** bag · **Enter** chat · **M** map |
+
+**On a phone** (screens narrower than 768 px) the screen is kept clear: the round buttons fold into the **☰** menu at the top right, the bar shows Xu and My Garden with the rest behind **⋯**, the music panel stays away until chosen from the menu, and a yellow **action button** appears next to the joystick whenever there is something to do (it does what **E** does).
 | **C** or the 📷 button | point of view: diorama (default), third person, top-down, first person. In first person the mouse is captured and moving it looks around, like an FPS; Esc frees it, a click on the game captures it again |
 | Drag / wheel | turn / zoom the camera; the eye button shows the whole map |
 | Click a player | report, block, visit their garden |

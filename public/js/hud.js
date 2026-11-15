@@ -21,7 +21,7 @@ export function createChat({ net, state, players }) {
     else if (e.key === 'Escape') input.blur();
     e.stopPropagation();
   });
-  const panel = createPanel('tablechat', 'Table chat', { hidden: true, contextual: true });
+  const panel = createPanel('tablechat', 'Table chat', { hidden: true, contextual: true, collapsed: innerWidth < 768 }); // on a phone it opens as one line; + unfolds it
   const tlog = el('div', { class: 'tlog' });
   const tinput = el('input', { type: 'text', maxlength: 200, placeholder: 'Only people at your table see this', autocomplete: 'off' });
   panel.body.append(tlog, tinput);
@@ -48,7 +48,7 @@ export function createChat({ net, state, players }) {
 // ---------------------------------------------------------------- shared music: one YouTube queue for everyone (silent when it is empty)
 export function createMusic({ net, state, audio }) {
   const MAX = 2;
-  const panel = createPanel('music', '🎵 Shared music', { collapsed: true, side: 'left' });
+  const panel = createPanel('music', '🎵 Shared music', { collapsed: true, side: 'left', closed: innerWidth < 768 }); // on a phone it stays away until Music is chosen in the menu
   const nowEl = el('div', { class: 'now' });
   const muteBtn = el('button', { class: 'ghost', title: 'Mute or unmute all sound for yourself only', text: '🔊' });
   const link = el('input', { type: 'text', placeholder: 'Paste a YouTube link', autocomplete: 'off' });

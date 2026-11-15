@@ -302,6 +302,7 @@ function vaoGame() {
     ? 'Walk with W A S D or click the ground. Scroll to zoom, drag to turn the camera.'
     : 'Drag the stick or tap the ground to walk. Drag the screen to turn.';
   hd.hidden = daXem;
+  if (innerWidth < 768) hd.querySelector('.cach-phim').innerHTML = 'When you can do something (sit down, pick up, plant, fish…), a <b>yellow button</b> appears next to the stick: tap it. The <b>☰</b> button at the top right holds the map, camera, emotes, music and chat. <b>⋯</b> next to My Garden shows your bag, earnings and friends.';
   $('da-hieu').addEventListener('click', () => { hd.hidden = true; try { localStorage.setItem('top1server-huong-dan', '1'); } catch { /* ignore */ } });
   let truoc = performance.now();
   const vong = (now) => { const dt = Math.min((now - truoc) / 1000, 0.25); truoc = now; buoc(dt, now / 1000); requestAnimationFrame(vong); };
@@ -630,12 +631,18 @@ let goiYCu = '';
 function veGoiY() {
   const p = ME; let h = F.hint(p) || rooms[p.room]?.hint?.(p) || '';
   if (!h && !F.blockMove()) {
-    if (p.seat) h = '<kbd>E</kbd> or move to stand up';
+    if (p.seat) h = innerWidth < 768 ? '' : '<kbd>E</kbd> or move to stand up'; // a phone already shows the Stand up button
     else if (p.room === 'cua-hang' && ganVat('guong', 3.4)) h = '<kbd>E</kbd> change your look at the mirror 🎨';
     else if (state.area === 'campus' && !p.room && ganVat('loa-nhac', 3.2)) h = '<kbd>E</kbd> open the shared music 🎵';
     else if (gheGanNhat()) h = '<kbd>E</kbd> sit down';
   }
-  if (h !== goiYCu) { goiYCu = h; const node = $('hint'); node.innerHTML = h; node.hidden = !h; }
+  if (h !== goiYCu) {
+    goiYCu = h; const node = $('hint');
+    // a phone has no E key: there the hint is the action button (tap it), so the key names are taken out of its text
+    const tap = innerWidth < 768 && /<kbd>E<\/kbd>/.test(h);
+    node.innerHTML = tap ? h.replace(/<kbd>E<\/kbd>(\s*\/\s*<kbd>Space<\/kbd>)?\s*/g, '').replace(/(<kbd>[WASD]<\/kbd>)+/g, 'move:') : h;
+    node.classList.toggle('bam', tap); node.hidden = !h;
+  }
 }
 
 // ---------------------------------------------------------------- clicking the world (Top1): walk there, use gates / chairs / objects
@@ -744,6 +751,13 @@ function ganDieuKhien() {
   $('nut-nhac').addEventListener('click', () => music.toggle());
   $('nut-chat').addEventListener('click', () => chat.toggle());
   $('nut-admin').addEventListener('click', () => social.adminLogin());
+  $('hint').addEventListener('click', () => { if ($('hint').classList.contains('bam')) nhanE(); }); // phones: tapping the hint does what E does
+  // phones: the round buttons fold into one menu button and show only while the player has it open (style.css, max-width 767px)
+  const cot = document.querySelector('.cot-phai'), nutMenu = $('nut-menu');
+  const datMenu = (mo) => { cot.classList.toggle('mo', mo); nutMenu.setAttribute('aria-expanded', String(mo)); nutMenu.textContent = mo ? '✕' : '☰'; };
+  nutMenu.addEventListener('click', () => datMenu(!cot.classList.contains('mo')));
+  cot.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && b !== nutMenu) datMenu(false); }); // choosing something closes the menu
+  $('canh').addEventListener('pointerdown', () => datMenu(false));
   addEventListener('resize', apDungKichThuoc);
 }
 function apDungKichThuoc() {

@@ -242,6 +242,36 @@ body:has(#hud .vc-panel:not(.hidden)) :is(#chat, .cot-phai, .cot-trai, #side) { 
 #vcFish .zone { position: absolute; top: 0; bottom: 0; background: var(--good); }
 #vcFish .needle { position: absolute; top: -2px; bottom: -2px; width: 6px; margin-left: -3px; background: var(--ink); border-radius: 3px; }
 #vcFish .st { font-size: 13px; color: var(--muted); }
+/* ---- phones: fewer things on screen. The round buttons fold into one menu button; the bar keeps Xu + My Garden and folds the rest behind ⋯ ---- */
+#nut-menu, #vcMore { display: none; }
+@media (max-width: 767px) {
+  #nut-menu { display: inline-flex; }
+  #nut-menu[aria-expanded="true"] { background: var(--accent); }
+  .cot-phai:not(.mo) > :not(#nut-menu) { display: none; }
+  .cot-phai.mo { gap: 8px; }
+  .cot-phai.mo > .nut.tron:not(#nut-menu) { position: relative; width: 46px; height: 46px; min-height: 46px; animation: menu-vao .16s ease-out backwards; }
+  .cot-phai.mo > .nut.tron:not(#nut-menu)::after { content: attr(aria-label); position: absolute; right: 54px; top: 50%; transform: translateY(-50%); background: var(--ink); color: #fff;
+    font: 700 13px/1 "Nunito", sans-serif; padding: 6px 10px; border-radius: 10px; white-space: nowrap; pointer-events: none; }
+  #vcMore { display: inline-block; position: relative; min-width: 42px; }
+  #vcBar.gon :is(#vcBag, #vcEarn, #vcFriends, #vcBoost), #vcBar.gon .xu small { display: none; }
+  #vcBar.gon:has(#vcFriends .n:not(.hidden)) #vcMore::after { content: ""; position: absolute; top: -6px; right: -6px; width: 13px; height: 13px; border-radius: 50%; background: var(--bad); border: 2px solid var(--ink); } /* a friend request is waiting */
+  /* the study / visiting status sits just above the bar, the chat just above that, and the left panels stop above the chat
+     (features.js measures the bar and the status line into --bar-h and --status-h, however many rows they wrap to) */
+  #hud #vcStatus { bottom: calc(178px + var(--bar-h, 102px)); }
+  #chat { bottom: calc(186px + var(--bar-h, 102px) + var(--status-h, 0px)); }
+  #side-left { max-height: calc(100vh - 430px - var(--bar-h, 102px) - var(--status-h, 0px)); }
+  /* "Stand up" and the hint use the free corner to the right of the joystick */
+  #nut-dung { left: auto; right: 12px; bottom: max(92px, env(safe-area-inset-bottom)); transform: none; min-height: 46px; padding: 8px 16px; }
+  #nut-dung:active { transform: translateY(4px) scale(.97); }
+  #hint { left: 160px; right: 12px; bottom: 30px; transform: none; text-align: center; white-space: normal; }
+  /* no E key on a phone: when there is something to do, the hint is a button to tap */
+  #hint.bam { pointer-events: auto; cursor: pointer; background: var(--accent); color: var(--ink); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink);
+    padding: 10px 14px; min-height: 54px; display: flex; align-items: center; justify-content: center; gap: 8px; font: 800 16px/1.2 "Baloo 2", "Nunito", sans-serif;
+    -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+  #hint.bam::before { content: "👆"; font-size: 22px; line-height: 1; }
+  #hint.bam:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+}
+@keyframes menu-vao { from { opacity: 0; transform: translateY(-8px); } }
 @media (max-width: 900px) { #vcBar { bottom: 170px; flex-wrap: wrap; justify-content: center; width: max-content; } #vcStatus { bottom: 250px; } } /* max-content: a bar centred with left: 50% would otherwise shrink to half the screen and stack one button per row */
 @media (min-width: 768px) and (max-width: 900px) { #chat .log { max-height: 92px; } } /* the Xu bar is raised at this width: the chat stays below it */
 @media (min-width: 901px) and (max-width: 1340px) { #chat { bottom: 84px; width: min(360px, calc(50vw - 170px)); } } /* medium windows: the Xu bar reaches under the chat, so the chat sits one row higher */

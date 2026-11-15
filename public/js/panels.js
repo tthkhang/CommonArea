@@ -31,7 +31,7 @@ export function createPanel(id, title, { hidden = false, collapsed = false, clos
   close.addEventListener('click', () => root.classList.add('closed'));
   // when the game shows a contextual panel again, an earlier "close" no longer applies
   new MutationObserver(() => { if (!root.hidden) root.classList.remove('closed'); }).observe(root, { attributes: true, attributeFilter: ['hidden'] });
-  $(side === 'left' ? 'side-left' : 'side').append(root);
+  $(side === 'left' || innerWidth < 768 ? 'side-left' : 'side').append(root); // on a phone every panel stacks in the left column, so none can land on top of another
   registry.set(id, { id, root, getTitle: () => titleEl.textContent, contextual, hint });
   return { root, body, show: () => { root.hidden = false; }, hide: () => { root.hidden = true; }, setTitle: (t) => { titleEl.textContent = t; } };
 }
