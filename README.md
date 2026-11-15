@@ -49,7 +49,7 @@ For a quick test with friends without any host, run the server on your own compu
 | | |
 |---|---|
 | **W A S D / arrows**, or click the ground | walk |
-| **E** | use what is next to you: seats, shop counters, garden beds, pond, fishing chairs, market, leaderboard, trash, mirror, music corner, food carts, playground, animals, the house |
+| **E** | use what is next to you: seats, shop counter, fishing chairs, market, leaderboard, trash, mirror, music corner, food carts, playground, animals, the house |
 | **Space** | jump · **G** emote wheel (1–8) · **B** bag · **Enter** chat · **M** map |
 | **C** or the 📷 button | point of view: diorama (default), third person, top-down, first person. In first person the mouse is captured and moving it looks around, like an FPS; Esc frees it, a click on the game captures it again |
 | Drag / wheel | turn / zoom the camera; the eye button shows the whole map |
@@ -61,12 +61,12 @@ For a quick test with friends without any host, run the server on your own compu
 - **Plaza**: campfire, 4 study tables (sit = Xu per minute, Pomodoro quiz after 25 min), Music Corner with beanbags (shared YouTube music), Market board, weekly Leaderboard, 3 recycling bins, litter, the travelling Merchant, a Bánh mì cart (food gives a study boost for a while).
 - **Rooms are closed buildings** (walls, roof, door curtain, sign). You see inside only after walking in, and the server does not send players inside a room to players outside.
   - **Cinema**: queue panel, synced video on the big screen, fixed corner camera, Xu while a film plays.
-  - **Garden Room**: 6 beds (plant / water / fertilise / harvest), fish pond, fishing dock, stall (shop + sell).
   - **Shop & Wardrobe**: shop counter (also buys animal products); the mirror opens the character customizer.
   - **Meeting Room**: 10-seat table (study Xu + table chat).
   - **Game Room** — see below.
   - **Astrology Room** — see below.
-- **Quiet Forest** (v5): east from the Game Room corridor; you walk straight through the wooden gate. Lake with 6 fishing chairs and 2 more at the winding stream (new mini-game: watch the shadow, reel when it bites), waterfall, 7 study tables with parasols (+25% Xu), a playground (swings, merry-go-round, spring riders, slide, climbing rock), the Forest Café and a food cart, forest sounds, Local chat.
+- **Quiet Forest** (v5): through the plaza's east gate, where the Garden Room used to be (removed on 2026-11-15); you walk straight through the wooden gate. Lake with 6 fishing chairs and 2 more at the winding stream (new mini-game: watch the shadow, reel when it bites), waterfall, 7 study tables with parasols (+25% Xu), a playground (swings, merry-go-round, spring riders, slide, climbing rock), the Forest Café and a food cart, forest sounds, Local chat.
+- **Friends**: click another player and choose **➕ Add friend**; they get a request (toast + a number on the **👥 Friends** button in the bottom bar) and accept or decline in the Friends panel. The panel lists friends with an online / offline dot, **Visit garden** (works when the friend is offline too) and remove. Friendship is mutual, saved in both profiles (up to 50), and needs the multiplayer server and a saved profile; solo mode has only villagers.
 - **My Garden** (v5 farm): button in the bottom bar. Private island with fields, orchard, fish tank with feeding tower, three walkable cloud islands for flower pots (5 pot types), pens for chickens, pigs and cows (eggs, truffles, milk), a two-storey house with furniture spots (the walls open up when you are inside), stall and notice board.
 
 ### Game Room (spec, second round)
@@ -97,7 +97,7 @@ Every number, star and planet has its own passage (about 1,450 passages, 49,000 
 Asked and answered on 2026-11-14:
 
 1. **Server**: Node.js (zero-dependency server; the same rule files run in the browser for solo mode).
-2. **Garden / forest**: combine both, keep everything. Top1's Garden Room works *and* the forest and private island exist.
+2. **Garden / forest**: at first both were kept. On 2026-11-15 Khang had Top1's Garden Room removed: the Quiet Forest now stands in its place, and gardening happens on each player's private island (My Garden). Crops that were growing in the old beds come back as seeds.
 3. **Rooms**: closed rooms like campus-export, not Top1's open-roof look.
 4. **Language**: English.
 
@@ -112,8 +112,8 @@ Smaller choices, decided without asking (easy to change):
 - **B** stays the bag; the emote wheel is on **G**.
 - Progress is saved. Name and look are remembered in the browser.
 - Top1's click-to-walk, map and diorama camera are the default; campus-export's other points of view are on **C**.
-- v4's shop kiosk and outdoor lounge screen were dropped: Top1's Shop room, Garden Room stall, Cinema and Music Corner do those jobs.
-- v5 replaces v4's island and forest. Top1's Garden Room dock stays as one more fishing spot; a third food cart stands on the plaza; animal products are sold at the Shop; decorations placed on the old island go back into the bag when a profile is upgraded.
+- v4's shop kiosk and outdoor lounge screen were dropped: Top1's Shop room, Cinema and Music Corner do those jobs.
+- v5 replaces v4's island and forest. A third food cart stands on the plaza; animal products are sold at the Shop; decorations placed on the old island go back into the bag when a profile is upgraded.
 - Capacity 100, walk speed 4 m/s, name "Common Area", port 5173.
 - **Astrology** (the spec's open questions, answered as it suggests): lunar dates with a leap-month box; 23:00–23:59 counts as the next day's Tý hour; the personal year changes on 1 January; Y is a vowel only when no other vowel is next to it; Life Path adds every digit and keeps 11 / 22 / 33; the lunar calendar is worked out in Vietnam time; houses are Placidus (Equal above 66° latitude); text lengths are the spec's "chữ" counts × 0.7 in English words.
 - **Games** (the spec's open questions, answered as it suggests): 10 Werewolf chairs; a dead player's role is shown at once; no stacking of +2 / +4; Ludo horses enter on a 6 or a 1. Also: the first face-up card in Colour Cards is always a number card; the Ludo host may end a game at any time (before anyone is home there is then no winner); Werewolves may whisper during the whole night; the bad-word list is a short starter list (English and Vietnamese) in `shared/games.js`.
@@ -157,16 +157,18 @@ Every room on the map already has its shell, seats, chat and a server plug-in. F
 
 Automatic checks (all pass with Node 22; the first four also with the Mac's built-in `jsc`):
 
-- **Rules** `tests/rules.test.mjs` (101): Xu, study, shop, farm animals, pots, furniture, food boost, fishing chairs, forest gate, profile upgrade, astrology profiles.
+- **Rules** `tests/rules.test.mjs` (113): Xu, study, shop, farm animals, pots, furniture, food boost, fishing chairs, forest gate and path, profile upgrade, astrology profiles, friends.
 - **Games** `tests/games.test.mjs` (165): every Ludo, Colour Cards and Werewolf rule of the spec, whole games between computer players, and the shared tables (lobby, host, clock, takeover, rejoin, spectators, secret hands and roles, chat filter, results, restart).
 - **Colour Match** `tests/match.test.mjs` (34): special gems, combos, goals, saving, and every one of the 30 levels can be won.
 - **Astrology** `tests/astro.test.mjs` (96) and `tests/reading.test.mjs` (28): calendars, numbers, Tử Vi placement, planet positions against published values, and the assembled reading. `tests/text/all.check.mjs` checks that all 1,452 passages exist and have the right length. The Tử Vi chart was not compared with a professional program.
-- **Map** `tests/F*.test.js` (54).
+- **Map** `tests/F*.test.js` (55).
 - **Multiplayer** `tests/multiplayer-smoke.mjs` (33) against a running `server.mjs`: two players, closed rooms, the cinema queue, a shared Colour Cards table with a computer player (secret hands, filtered chat, takeover), Werewolf lobby. The readings file `data/chiem-tinh.csv` was written by the server and read back.
 
 By hand, in solo mode in the browser, no console errors: the farm island (animals, cloud gardens, house), forest gate, a fishing chair, playground, café and carts; the astrology form, the three tabs, the saved profile and the download; in the Game Room the table card, lobby, a Ludo game, a Colour Cards game, a whole Werewolf practice game, Colour Match level 1 to three stars, the rule books and both guided practices.
 
 A test pass on 2026-11-15 also covered: every plaza and room feature in solo mode (study, litter, music, market, leaderboard, shop, mirror, garden beds, pond, a full fishing catch, meeting table, a YouTube video on the cinema screen, map jumps, emotes, bag); a farm filled with every animal, piece of furniture, decoration, fish and plant; visiting and liking another garden; the astrology form with impossible input. Against the real server: a Colour Cards game between the browser, a scripted player and a computer player; a six-player Werewolf game with five scripted players (clocks shortened for the test); watching a table. 120,000 random junk messages were thrown at the rules without a single crash. The phone layout was looked at on an emulated 375 px screen and its overlaps fixed.
+
+After the map change and the friends feature (2026-11-15): the east gate, the path and the walk into the forest in the browser; against the real server, one browser and two scripted players: a request arriving, accepting, sending a request from a player's card, the list going online / offline, visiting an online and an offline friend's garden, removing a friend. On a phone-size screen an open panel now sits above the chat and side buttons.
 
 **Not checked**: several real people on different computers, a Werewolf game at full clock length with real people, a real phone, market trades between players, performance with many players. A Ludo game with four players is long (the folk rules with kicking and exact home numbers: about 2,000 rolls between computer players; two players need about 400).
 

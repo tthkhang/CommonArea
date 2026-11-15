@@ -104,7 +104,7 @@
   const FERT = { name: 'Fertiliser', icon: '🧪', price: 15, qty: 3 };   // per plant: −30% of one growing cycle
   const BOOST = { name: 'Super Fertiliser', icon: '⚡', price: 60, minutes: 60, speed: 0.5 }; // whole garden grows 50% faster for 60 min
 
-  // ---- Fish (v5: caught from the fishing chairs in the forest and the Garden Room dock, some sold in the shop). w = catch weight.
+  // ---- Fish (v5: caught from the fishing chairs in the forest, some sold in the shop). w = catch weight.
   //      Look: shape (oval | slim | round | tall | long), color / belly, pat {t: stripes|bands|spots|line, c}, fin (normal | fan | long), finC, whisk ----
   const FISH = {
     ro:        { name: 'Perch',        rarity: 'Common',    tier: 1, w: 30, size: [10, 18], value: 12,  color: '#8d9a5b', belly: '#cfd59e', shape: 'oval', pat: { t: 'stripes', c: '#5f6b3a' }, finC: '#6b7a3f' },

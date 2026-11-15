@@ -3,7 +3,7 @@
 // what is inside a room is hidden until you walk in. Identifiers stay Vietnamese as in the original Top1 code.
 // Quy tắc vẽ: 1-wiki/design/style.md (Play Together: đồ chơi bo tròn, chibi · Among Us: viền đậm, tô phẳng 3 bậc).
 import * as THREE from 'three';
-import { BAN_DO, PHONG, KHU, QUANG_TRUONG, LOI_RUNG, phongTaiViTri } from './logic.js';
+import { BAN_DO, PHONG, KHU, QUANG_TRUONG, LOI_RUNG, RAO_DONG, phongTaiViTri } from './logic.js';
 
 export const MUC = '#2B1F4D'; // --ink: màu viền
 
@@ -266,7 +266,7 @@ export async function dungTheGioi(scene) {
   // ---- sa bàn (ảnh mẫu PO): cỏ bên ngoài, khu đất cát trong hàng rào trắng, bãi cỏ có hoa, cây tròn
   const nenNgoai = new THREE.Mesh(new THREE.PlaneGeometry(500, 500), toon('#8FD16F'));
   nenNgoai.rotation.x = -Math.PI / 2; nenNgoai.position.y = -0.08; nenNgoai.receiveShadow = true; scene.add(nenNgoai);
-  const LO = { x1: -50, x2: 62, z1: -55, z2: 57 };
+  const LO = { x1: -50, x2: RAO_DONG, z1: -55, z2: 57 }; // east side: the fence in front of the Quiet Forest
   gop.them(G.hop, '#F2E3C6', (LO.x1 + LO.x2) / 2, -0.05, (LO.z1 + LO.z2) / 2, { sx: LO.x2 - LO.x1, sy: 0.06, sz: LO.z2 - LO.z1, khu: 'ngoai', vien: 0, bong: false, nhanBong: true });
   // hàng rào trắng
   let soRao = 0;
@@ -279,7 +279,7 @@ export async function dungTheGioi(scene) {
   rao(LO.x1, LO.z1, LO.x2, LO.z1); rao(LO.x1, LO.z2, LO.x2, LO.z2); rao(LO.x1, LO.z1, LO.x1, LO.z2);
   rao(LO.x2, LO.z1, LO.x2, LOI_RUNG.z1 - 1.2); rao(LO.x2, LOI_RUNG.z2 + 1.2, LO.x2, LO.z2); // east side, open at the forest gate
   thuChay.rao = soRao;
-  const coBai = [[-48, -53, -31, -14], [31, -53, 60, LOI_RUNG.z1 - 1.2], [-48, 14, -31, 55], [31, 20, 60, 55], [-1.4, -53, 1.4, -27], [-1.4, 27, 1.4, 55]];
+  const coBai = [[-48, -53, -31, -14], [-48, 14, -31, 55], [-1.4, -53, 1.4, -27], [-1.4, 27, 1.4, 55]]; // (the two lawns in the east made way for the forest)
   const hoaMau = ['#FFFFFF', '#F28AC0', '#FFC43D', '#C9A7FF', '#FF6B6B'];
   let hat = 7;
   const ngauNhien = () => { hat = (hat * 9301 + 49297) % 233280; return hat / 233280; };
@@ -344,7 +344,7 @@ export async function dungTheGioi(scene) {
   // cây quanh sa bàn
   [[-45, -50, 1.2], [-38, -44, 1.0], [-44, -36, 1.3], [-36, -26, 1.1], [-45, -20, 1.0], [36, -50, 1.3], [46, -46, 1.1], [56, -50, 1.2],
     [40, -36, 1.0], [54, -30, 1.3], [36, -29, 1.1], [-44, 18, 1.2], [-36, 26, 1.0], [-45, 34, 1.3], [-37, 44, 1.1], [-44, 52, 1.0], [36, 26, 1.2],
-    [46, 32, 1.0], [56, 26, 1.3], [40, 44, 1.1], [52, 50, 1.2], [36, 54, 1.0], [0, -44, 0.9], [0, 40, 0.9]].forEach(([x, z, s], i) => (i % 3 === 1 ? bach(x, z, s * 1.1, 'ngoai') : i % 3 === 2 ? oLiu(x, z, s, 'ngoai') : cay(x, z, s, 'ngoai')));
+    [46, 32, 1.0], [56, 26, 1.3], [40, 44, 1.1], [52, 50, 1.2], [36, 54, 1.0], [0, -44, 0.9], [0, 40, 0.9]].filter(([x]) => x < RAO_DONG).forEach(([x, z, s], i) => (i % 3 === 1 ? bach(x, z, s * 1.1, 'ngoai') : i % 3 === 2 ? oLiu(x, z, s, 'ngoai') : cay(x, z, s, 'ngoai')));
 
   // ---- sàn từng khu
   const san = (r, mau, khu, cao = 0.12) => gop.them(G.hop, mau, (r.x1 + r.x2) / 2, -cao / 2 + 0.01, (r.z1 + r.z2) / 2, { sx: r.x2 - r.x1 + 0.5, sy: cao, sz: r.z2 - r.z1 + 0.5, khu, vien: 0, bong: false, nhanBong: true });
@@ -387,7 +387,7 @@ export async function dungTheGioi(scene) {
     cotHyLap(x, z, 4.6, 'chung', 0.55);
     gop.them(G.cauThap, '#5DBB63', x, 4.55, z, { sx: 0.9, sy: 0.5, sz: 0.9, khu: 'chung', vien: 0.03 }); // dây leo
   }
-  for (const [x, z, ry] of [[-22, -22, Math.PI / 4], [22, -15.6, -Math.PI / 4], [-22, 22, Math.PI * 0.75], [22, 22, -Math.PI * 0.75]]) tuongBanThan(x, z, ry, 'ngoai');
+  for (const [x, z, ry] of [[-22, -22, Math.PI / 4], [22, -22, -Math.PI / 4], [-22, 22, Math.PI * 0.75], [22, 22, -Math.PI * 0.75]]) tuongBanThan(x, z, ry, 'ngoai');
   for (const [x, z] of [[-20, -8], [-20, 8], [20, -8], [20, 8], [-8, -20], [8, -20], [-8, 20], [8, 20]]) binhGom(x, z, 'ngoai', 1.2);
   thuChay.den = 0;
   const denLong = (x, z, khu, cao = 3) => {
@@ -601,78 +601,6 @@ export async function dungTheGioi(scene) {
   }
   for (const [x, z, r, m] of [[8, -43, 4.1, '#C9B6F2'], [21, -43, 3, '#F6C3C0'], [21.5, -32.5, 3, '#BFE5C9'], [6.5, -32.5, 2.6, '#FFE6A8']]) gop.them(G.tru, m, x, 0.03, z, { sx: r, sy: 0.05, sz: r, khu: TC, vien: 0, bong: false });
   for (const [x, z] of [[3, -27], [27, -27], [3, -49], [27, -49]]) bui(x, z, TC, '#C9A7FF', 1.2);
-
-  // ---- PHÒNG TRỒNG CÂY: luống, hồ, cá, bến câu, đài phun nước, quầy
-  const TCY = 'trong-cay';
-  for (const v of BAN_DO.vat.filter((x) => x.loai === 'luong')) {
-    gop.them(hopBo(3.4, 0.45, 2.4, 0.08), '#A86F45', v.x, 0.22, v.z, { khu: TCY, vien: 0.035 });
-    gop.them(hopBo(3.0, 0.1, 2.0, 0.05), '#5B3A26', v.x, 0.47, v.z, { khu: TCY, vien: 0, bong: false });
-    themProxy(v.id, v.x, 0.4, v.z, 3.4, 0.8, 2.4);
-  }
-  const nuocMat = toon('#6FD3F2', 0.15, { trongSuot: 0.82, rieng: true });
-  for (const h of BAN_DO.nuoc) {
-    gop.them(new THREE.TorusGeometry(h.r + 0.15, 0.35, 6, 32), DA_TRANG, h.x, 0.18, h.z, { rx: Math.PI / 2, khu: TCY, vien: 0.035 });
-    gop.them(G.tru, '#2E8FB3', h.x, -0.2, h.z, { sx: h.r, sy: 0.2, sz: h.r, khu: TCY, vien: 0, bong: false });
-    const mat = new THREE.Mesh(new THREE.CircleGeometry(h.r + 0.05, 40, 0, Math.PI * 2), nuocMat);
-    mat.rotation.x = -Math.PI / 2; mat.position.set(h.x, 0.12, h.z); scene.add(mat);
-    // gợn sóng: vòng tròn mờ to dần
-    for (let i = 0; i < 2; i++) {
-      const gon = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 32), new THREE.MeshBasicMaterial({ color: '#FFFFFF', transparent: true, opacity: 0.5, depthWrite: false }));
-      gon.rotation.x = -Math.PI / 2; gon.position.set(h.x + (i ? 1.2 : -1), 0.14, h.z + (i ? -0.8 : 1)); scene.add(gon);
-      dong.push((t) => { const k = ((t * 0.45 + i * 0.5) % 1); gon.scale.setScalar(0.4 + k * 2.6); gon.material.opacity = 0.55 * (1 - k); });
-      if (!thuChay.gon) thuChay.gon = gon;
-    }
-    if (h.id === 'ho-ca') themProxy('ho-ca', h.x, 0.4, h.z, h.r * 1.6, 0.8, h.r * 1.6);
-  }
-  // cá
-  const caMau = ['#FF8A3D', '#FFFFFF', '#FF6B4A', '#FFC43D', '#F76BAF', '#FF8A3D'];
-  caMau.forEach((m, i) => {
-    const ca = new THREE.Group();
-    const than = new THREE.Mesh(G.cau, toon(m)); than.scale.set(0.16, 0.12, 0.38); ca.add(than);
-    const duoi = new THREE.Mesh(G.non4, toon(m)); duoi.scale.set(0.16, 0.2, 0.04); duoi.rotation.x = Math.PI / 2; duoi.position.z = -0.45; ca.add(duoi);
-    if (i % 2) { const dom = new THREE.Mesh(G.cau, toon('#FFFFFF')); dom.scale.set(0.1, 0.08, 0.12); dom.position.set(0, 0.06, 0.08); ca.add(dom); }
-    ca.userData.khu = TCY; scene.add(ca); thuChay.ca.push(ca);
-    const ho = i < 4 ? BAN_DO.nuoc[0] : BAN_DO.nuoc[1]; const rr = 1.2 + (i % 3) * 0.9; const tocDo = 0.5 + (i % 4) * 0.12; const pha = i * 1.7;
-    dong.push((t) => {
-      const a = t * tocDo * (i % 2 ? 1 : -1) + pha;
-      ca.position.set(ho.x + Math.sin(a) * rr, 0.02 + Math.sin(t * 3 + i) * 0.03, ho.z + Math.cos(a) * rr);
-      ca.rotation.y = a + (i % 2 ? Math.PI / 2 : -Math.PI / 2); duoi.rotation.y = Math.sin(t * 10 + i) * 0.4;
-    });
-  });
-  // bến câu
-  const bc = BAN_DO.vat.find((x) => x.id === 'ben-cau');
-  for (let i = 0; i < 6; i++) gop.them(hopBo(0.45, 0.12, 1.6, 0.03), '#B98A5E', 44.4 + i * 0.5, 0.32, 9, { khu: TCY, vien: 0.02 });
-  for (const [dx, dz] of [[0, -0.75], [0, 0.75], [2.6, -0.75], [2.6, 0.75]]) gop.them(G.tru8, '#6B4630', 44.4 + dx, 0.2, 9 + dz, { sx: 0.08, sy: 0.6, sz: 0.08, khu: TCY, vien: 0.015 });
-  gop.them(G.tru8, '#5A3E2B', 46.6, 0.8, 9.3, { sx: 0.03, sy: 1.8, sz: 0.03, rz: -0.6, khu: TCY, vien: 0.01 });
-  gop.them(G.cau, '#E5484D', 47.8, 0.16, 9.3, { sx: 0.08, sy: 0.08, sz: 0.08, khu: TCY, vien: 0.01 });
-  themProxy('ben-cau', bc.x + 0.6, 0.5, bc.z, 2.2, 1, 1.8);
-  // đài phun nước
-  gop.them(G.tru, DA_TRANG, 38, 0.3, 6, { sx: 2.2, sy: 0.6, sz: 2.2, khu: TCY, vien: 0.04 });
-  gop.them(G.tru, '#6FD3F2', 38, 0.58, 6, { sx: 1.9, sy: 0.06, sz: 1.9, khu: TCY, vien: 0, phat: 0.15 });
-  gop.them(G.tru8, DA_TRANG, 38, 1.2, 6, { sx: 0.3, sy: 1.4, sz: 0.3, khu: TCY, vien: 0.03 });
-  gop.them(G.tru, DA_TRANG, 38, 1.9, 6, { sx: 1, sy: 0.25, sz: 1, khu: TCY, vien: 0.03 });
-  gop.them(G.tru8, DA_TRANG, 38, 2.4, 6, { sx: 0.15, sy: 0.8, sz: 0.15, khu: TCY, vien: 0.02 });
-  const SO_GIOT = 70; const giotPos = new Float32Array(SO_GIOT * 3);
-  const giotGeo = new THREE.BufferGeometry(); giotGeo.setAttribute('position', new THREE.BufferAttribute(giotPos, 3));
-  const giot = new THREE.Points(giotGeo, new THREE.PointsMaterial({ color: '#BDEBFF', size: 0.16, transparent: true, opacity: 0.9 }));
-  giot.userData.khu = TCY; scene.add(giot); thuChay.giot = giotPos;
-  dong.push((t) => {
-    for (let i = 0; i < SO_GIOT; i++) {
-      const k = ((t * 0.7 + i / SO_GIOT) % 1); const a = i * 2.39996; const r = 0.15 + k * 0.95;
-      giotPos[i * 3] = 38 + Math.cos(a) * r; giotPos[i * 3 + 1] = 2.85 + k * 1.2 - k * k * 2.6; giotPos[i * 3 + 2] = 6 + Math.sin(a) * r;
-    }
-    giotGeo.attributes.position.needsUpdate = true;
-  });
-  themProxy('dai-phun-nuoc', 38, 1.2, 6, 4.4, 2.4, 4.4);
-  // quầy hàng mái sọc
-  gop.them(hopBo(4, 1, 2.4, 0.08), '#B98A5E', 31, 0.5, 11.5, { khu: TCY, vien: 0.035 });
-  for (const [x, m] of [[29.6, '#9FE3FF'], [30.4, '#F28AC0'], [31.2, '#C9A7FF'], [32, '#FFC43D']]) gop.them(G.tru8, m, x, 1.18, 11.2, { sx: 0.16, sy: 0.36, sz: 0.16, khu: TCY, vien: 0.015 });
-  for (const s of [-1, 1]) gop.them(G.tru8, '#6B4630', 31 + s * 1.9, 1.5, 12.5, { sx: 0.08, sy: 3, sz: 0.08, khu: TCY, vien: 0.02 });
-  for (let i = 0; i < 6; i++) gop.them(hopBo(0.7, 0.08, 2.2, 0.03), i % 2 ? '#FFFFFF' : '#8E5BFF', 28.95 + i * 0.7 + 0.35, 3, 11.4, { rx: 0.25, khu: TCY, vien: 0.02 });
-  themProxy('quay-hang', 31, 1.2, 11.5, 4, 2.4, 2.4);
-  for (const [x, z, m] of [[27.5, -15, '#F28AC0'], [57, -15, '#C9A7FF'], [57, 15, '#FFC43D'], [27.5, 6, '#F28AC0'], [42, -15, '#C9A7FF'], [42, 15, '#F28AC0']]) bui(x, z, TCY, m, 1.1);
-  for (const [x, z] of [[55.5, -1], [27.6, -7]]) cay(x, z, 0.9, TCY);
-  for (const [x, z] of [[34.5, 0], [45, 0], [56, -12]]) denLong(x, z, TCY, 2.2);
 
   // ---- PHÒNG XEM PHIM: màn hình, rèm, quầy bỏng ngô, đèn lối đi
   const XP = 'xem-phim';

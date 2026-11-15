@@ -3,7 +3,7 @@
 import { CHOICES, SKIN_TONES } from './avatar.js';
 
 const NAMES = ['Minh', 'Lan', 'Huy', 'Thao', 'Khoa', 'Vy', 'Bao', 'Ngoc', 'Tuan'];
-const LINES = ['hi everyone!', 'anyone up for a study session?', 'the campfire is cosy', 'this music is nice', 'brb', 'lol', 'see you in the Garden Room', 'gg',
+const LINES = ['hi everyone!', 'anyone up for a study session?', 'the campfire is cosy', 'this music is nice', 'brb', 'lol', 'see you in the Quiet Forest', 'gg',
   'who wants to watch something in the Cinema?', 'I caught a koi today!', 'hello!', 'my carrots are ready', 'selling tomatoes at the Market'];
 const TABLE_LINES = ['what chapter are you on?', "let's do 25 min of focus", 'can someone explain question 3?', "ok I'm back", 'nice, almost done'];
 const COLORS = ['#e5484d', '#3e63dd', '#30a46c', '#f76baf', '#f76b15', '#ffc53d', '#3a3a44', '#f2f2f2', '#8e4ec6', '#a0663b', '#12a594', '#99d52a'];

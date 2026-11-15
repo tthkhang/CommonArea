@@ -50,17 +50,17 @@ test('tìm đường giữa 2 phòng khác nhau đi qua quảng trường', () =
 });
 test('đổi khu bằng bản đồ: đứng ở điểm xuất hiện, rời ghế', () => {
   const s = { room: 'chung', player: { x: 0, z: 0, seat: 'ghe-x' }, ghe: { 'ghe-x': 'Q' } };
-  const s2 = doiKhu(s, 'trong-cay', 'Q');
-  assert.equal(s2.room, 'trong-cay');
+  const s2 = doiKhu(s, 'tro-choi', 'Q');
+  assert.equal(s2.room, 'tro-choi');
   assert.equal(s2.player.seat, null);
-  assert.deepEqual({ x: s2.player.x, z: s2.player.z }, PHONG['trong-cay'].xuatHien);
+  assert.deepEqual({ x: s2.player.x, z: s2.player.z }, PHONG['tro-choi'].xuatHien);
   assert.equal(s2.ghe['ghe-x'], undefined);
   assert.throws(() => doiKhu(s, 'khong-co', 'Q'));
 });
 test('tải lại trang: vị trí đã lưu hợp lệ thì giữ, ngoài bản đồ hoặc hỏng thì về đống lửa', () => {
-  const v = PHONG['trong-cay'].xuatHien;
+  const v = PHONG['tro-choi'].xuatHien;
   const ok = docLuu(JSON.stringify({ ten: 'Q', mau: '#E5484D', x: v.x, z: v.z }));
-  assert.equal(phongTaiViTri(ok.x, ok.z), 'trong-cay');
+  assert.equal(phongTaiViTri(ok.x, ok.z), 'tro-choi');
   for (const raw of [JSON.stringify({ x: 999, z: 999 }), JSON.stringify({ x: 'a', z: null }), '{oops']) {
     const d = docLuu(raw);
     assert.deepEqual({ x: d.x, z: d.z }, PHONG.chung.xuatHien, raw);

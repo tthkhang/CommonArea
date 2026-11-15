@@ -28,26 +28,27 @@ const got = (to, type) => out.filter(([t, m]) => t === to && m.type === type).ma
 const walk = (id, x, z) => { const p = room.players.get(id); const steps = Math.max(1, Math.ceil(Math.hypot(x - p.x, z - p.z) / 2)); const sx = p.x, sz = p.z; for (let i = 1; i <= steps; i++) room.handle(id, { type: 'move', x: sx + (x - sx) * i / steps, z: sz + (z - sz) * i / steps, ry: 0, moving: true }); };
 
 // ---------------------------------------------------------------- map
-ok(W.rooms.length === 6 && W.rooms.every((r) => L.PHONG[r.id]), 'six closed rooms come from the Top1 map');
+ok(W.rooms.length === 5 && W.rooms.every((r) => L.PHONG[r.id]), 'five closed rooms come from the Top1 map');
 ok(W.tables.filter((t) => !t.kind && !t.room).length === 4 && W.tables.find((t) => t.id === 'ban-hop').seats.length === 10, '4 plaza study tables + 10-seat meeting table');
 ok(W.tables.filter((t) => t.kind === 'cinema').reduce((n, t) => n + t.seats.length, 0) === 33, 'cinema rows hold 33 seats');
 ok(W.tables.filter((t) => t.kind === 'grove').every((t) => t.x > 62.8 && L.vungTaiViTri(t.x, t.z) === 'rung'), 'forest tables sit inside the shifted forest');
 ok(L.trongVungDi(W.forestGate.x, W.forestGate.z) && L.vungTaiViTri(W.forestGate.x - 5, W.forestGate.z) === 'loi-rung', 'forest gate is on the walkable forest path');
 ok(W.roomAt(-14, -36) === 'chiem-tinh' && W.roomAt(0, 0) === null, 'roomAt finds closed rooms');
 ok(W.isFree(-5, 5) && !W.isFree(0, 0) && !W.isFree(W.market.x, W.market.z), 'isFree knows furniture and props');
-{ // the forest path is enclosed: walking north/south out of it is blocked, east/west along it works
-  const VC = L.vatCanTatCa(); let p = { x: 30, z: -22 };
+{ // the forest path leaves the plaza through its east exit (where the Garden Room used to be) and is enclosed on both sides
+  const VC = L.vatCanTatCa(); let p = { x: 24, z: 0 };
   for (let i = 0; i < 100; i++) p = L.buocDi(p, { x: 0, z: 1 }, 0.1, VC);
-  const south = p.z; p = { x: 30, z: -22 };
+  const south = p.z; p = { x: 24, z: 0 };
   for (let i = 0; i < 100; i++) p = L.buocDi(p, { x: 0, z: -1 }, 0.1, VC);
-  const north = p.z; p = { x: 20, z: -22 };
+  const north = p.z; p = { x: 10, z: 0 };
   for (let i = 0; i < 80; i++) p = L.buocDi(p, { x: 1, z: 0 }, 0.1, VC);
-  ok(south < -19.5 && north > -24.5 && p.x > 50, 'forest path has hedges on both sides and is open along its length');
+  ok(south < 2 && north > -2 && p.x > L.RAO_DONG, 'forest path has walls on both sides and is open from the plaza to the gate');
   let q = { x: 14, z: -20 };
   for (let i = 0; i < 60; i++) q = L.buocDi(q, { x: 1, z: 0 }, 0.1, VC);
-  ok(q.x > 30, 'the Game Room corridor opens onto the forest path');
-  const route = L.timDuong({ x: 2, z: 2 }, { x: 40, z: -22 });
-  ok(route.some((d) => Math.abs(d.x - 14) < 0.1 && Math.abs(d.z + 22) < 0.1), 'path finding routes plaza -> forest path through the Game Room corridor');
+  ok(q.x < 16, 'the Game Room corridor no longer opens to the east');
+  const route = L.timDuong({ x: 2, z: 2 }, { x: 40, z: 0 });
+  ok(route.some((d) => Math.abs(d.x - 16) < 0.1 && Math.abs(d.z) < 0.1), 'path finding routes plaza -> forest through the east exit');
+  ok(L.RAO_DONG === 30 && W.fenceX === 30 && L.RUNG.x1 > 28 && W.rooms.every((r) => r.rect.x2 <= 28.01 || r.rect.x1 >= L.RUNG.x2), 'the forest starts at the east fence (x = 30) and overlaps no room');
 }
 
 // ---------------------------------------------------------------- join, looks, emotes
@@ -148,30 +149,18 @@ const xu3 = a.pr.xu; room.handle('a', { type: 'pickTrash', id: tr.id });
 ok(a.carry === 1 && a.pr.xu === xu3 + C.ECON.trashPick && room.trashList().every((t) => Math.abs(t.x) <= 17 && Math.abs(t.z) <= 17 && W.isFree(t.x, t.z)), 'trash is picked on the plaza; all trash lies on free plaza ground');
 a.x = W.bins[0].x + 1; a.z = W.bins[0].z; room.handle('a', { type: 'dropTrash', bin: 0 }); ok(a.carry === 0, 'trash dropped in a bin');
 
-// ---------------------------------------------------------------- shops: Shop room counter + Garden Room stall
+// ---------------------------------------------------------------- shop: the Shop room counter (the Garden Room and its stall were removed)
 room.handle('a', { type: 'buy', item: 'seed:carrot', qty: 1 }); ok(a.pr.inv['seed:carrot'] === 3, 'cannot buy away from a shop');
 a.area = 'campus'; a.x = W.shops[0].x; a.z = W.shops[0].z; room.setRoom(a, 'cua-hang');
 room.handle('a', { type: 'buy', item: 'seed:carrot', qty: 2 }); ok(a.pr.inv['seed:carrot'] === 5, 'buying at the Shop & Wardrobe counter');
-a.x = W.shops[1].x; a.z = W.shops[1].z; room.setRoom(a, 'trong-cay');
-room.handle('a', { type: 'buy', item: 'food', qty: 1 }); ok(a.pr.inv.food === 10, 'buying at the Garden Room stall');
-
-// ---------------------------------------------------------------- Top1 Garden Room: beds, pond, dock
-const bed = W.beds[0]; a.x = bed.x; a.z = bed.z + 2;
-room.handle('a', { type: 'plant', where: 'bed', id: '0', seed: 'carrot' });
-ok(a.pr.garden.beds['0'] && a.pr.garden.beds['0'].s === 'carrot', 'planting in a Garden Room bed');
-room.handle('a', { type: 'plant', where: 'bed', id: '5', seed: 'carrot' }); ok(!a.pr.garden.beds['5'], 'beds need you to stand next to them');
-room.handle('a', { type: 'plant', where: 'plot', id: '0,0', seed: 'carrot' }); ok(!a.pr.garden.plots['0,0'], 'island plots cannot be used from the Garden Room');
-room.handle('a', { type: 'care', where: 'bed', id: '0', what: 'water' }); room.handle('a', { type: 'care', where: 'bed', id: '0', what: 'fert' });
-now += 2 * 60000 * 0.56; room.handle('a', { type: 'harvest', where: 'bed', id: '0' });
-ok(!a.pr.garden.beds['0'] && a.pr.inv['crop:carrot'] >= 2, 'bed harvested early thanks to water + fertiliser');
-const dockSpot = W.fishSpots.findIndex((s) => s.kind === 'dock');
-a.x = W.dock2.x; a.z = W.dock2.z; room.handle('a', { type: 'fishCast', spot: 0 }); ok(!a.fishing, 'a forest chair cannot be used from the Garden Room');
-room.handle('a', { type: 'fishCast', spot: dockSpot });
-ok(a.fishing, 'casting from the Garden Room dock'); now = a.fishing.biteAt + 100; room.handle('a', { type: 'fishReel', ok: true });
-ok(a.pr.bag.length === 1, 'fish caught');
-a.x = W.pond2.x - W.pond2.r - 1; a.z = W.pond2.z; room.handle('a', { type: 'pondRelease', uid: a.pr.bag[0].uid });
-ok(a.pr.garden.fish.length === 1 && a.pr.bag.length === 0, 'fish released into the Garden Room pond');
-room.handle('a', { type: 'pondFeed' }); ok(a.pr.garden.fish[0].fedAt === now, 'fish fed from the pond');
+ok(W.shops.length === 1 && !W.rooms.some((r) => r.id === 'trong-cay') && W.beds.length === 0 && W.fishSpots.every((s) => s.area === 'forest'), 'the Garden Room is gone: no stall, no beds, no dock');
+room.handle('a', { type: 'plant', where: 'bed', id: '0', seed: 'carrot' }); ok(!a.pr.garden.beds['0'] && a.pr.inv['seed:carrot'] === 5, 'garden beds can no longer be planted');
+{ // an older profile with crops in the Garden Room beds gets them back as seeds
+  const tok = 'f'.repeat(24); saved[tok] = { v: 5, xu: 10, inv: { 'seed:carrot': 1 }, garden: { beds: { 0: { s: 'carrot', at: 1 }, 3: { s: 'wheat', at: 1 }, 4: { s: 'no-such-plant', at: 1 } } } };
+  room.join('z', { name: 'Zed', token: tok }); const z = room.players.get('z');
+  ok(z.pr.inv['seed:carrot'] === 2 && z.pr.inv['seed:wheat'] === 1 && Object.keys(z.pr.garden.beds).length === 0, 'crops left in the old garden beds come back as seeds');
+  room.leave('z');
+}
 
 // ---------------------------------------------------------------- forest (v5: walk straight through the gate) + Local chat + fishing chairs
 room.setRoom(a, null); a.x = W.fenceX - 8; a.z = W.forestGate.z;
@@ -265,6 +254,64 @@ room.handle('a', { type: 'area', to: 'back' }); ok(a.area === 'campus', 'back fr
 
 // ---------------------------------------------------------------- upgrades survive a reload (v4 capped land at level 2)
 a.pr.garden.land = 4; room.saveProfile(a); ok(Room.fixProfile(store.load(a.token)).garden.land === 4, 'land level 4 survives reload');
+// ---------------------------------------------------------------- friends: ask, accept, list, visit a friend's garden, remove
+{
+  const o = [], sv = {}; let t = 1800000000000;
+  const st = { load: (k) => (sv[k] ? JSON.parse(JSON.stringify(sv[k])) : null), save: (k, p) => { sv[k] = JSON.parse(JSON.stringify(p)); }, all: () => Object.entries(sv), loadMeta: () => null, saveMeta: () => {} };
+  const mk = () => new Room({ cap: 100, now: () => t, send: (to, m) => o.push([to, m]), store: st, checkAdmin: () => false });
+  let r = mk();
+  const lastTo = (to, type) => { const e = [...o].reverse().find(([x, m]) => x === to && m.type === type); return e && e[1]; };
+  const TA = 'a1a1a1a1a1a1a1a1a1a1a1a1', TB = 'b2b2b2b2b2b2b2b2b2b2b2b2', TC = 'c3c3c3c3c3c3c3c3c3c3c3c3';
+  const GA = Room.gidOf(TA), GB = Room.gidOf(TB), GC = Room.gidOf(TC);
+  r.join('fa', { name: 'An', token: TA }); r.join('fb', { name: 'Binh', token: TB }); r.join('fg', { name: 'Guest' });
+  const fa = r.players.get('fa'), fb = r.players.get('fb');
+  ok(lastTo('fa', 'friends') && lastTo('fa', 'friends').list.length === 0, 'a player gets an (empty) friends list on joining');
+  r.handle('fa', { type: 'friendAdd', id: 'fa' }); r.handle('fa', { type: 'friendAdd', id: 'fg' }); r.handle('fg', { type: 'friendAdd', id: 'fa' });
+  ok(!lastTo('fa', 'friendRequest') && !lastTo('fg', 'friendRequest') && !fa.pr.friends, 'no friend requests to yourself, to a player without a saved profile, or from one');
+  t += 2000; r.handle('fa', { type: 'friendAdd', id: 'fb' });
+  ok(lastTo('fb', 'friendRequest').gid === GA && lastTo('fb', 'friends').requests[0].name === 'An' && !(fa.pr.friends || {})[GB], 'a friend request reaches the other player and waits for their answer');
+  r.handle('fb', { type: 'friendAnswer', gid: GA, ok: false });
+  ok(!(fb.pr.friends || {})[GA] && lastTo('fb', 'friends').requests.length === 0, 'declining a request makes nobody friends');
+  r.handle('fb', { type: 'friendAnswer', gid: GA, ok: true });
+  ok(!(fb.pr.friends || {})[GA], 'an answer without a waiting request does nothing');
+  t += 2000; r.handle('fa', { type: 'friendAdd', id: 'fb' }); t += 121000; r.handle('fb', { type: 'friendAnswer', gid: GA, ok: true });
+  ok(!(fb.pr.friends || {})[GA], 'a request runs out after two minutes');
+  t += 2000; r.handle('fa', { type: 'friendAdd', id: 'fb' }); r.handle('fb', { type: 'friendAnswer', gid: GA, ok: true });
+  ok(fa.pr.friends[GB].name === 'Binh' && fb.pr.friends[GA].name === 'An', 'accepting makes both players friends');
+  const la = lastTo('fa', 'friends').list;
+  ok(la.length === 1 && la[0].gid === GB && la[0].online === true && la[0].id === 'fb', 'the friends list shows the friend as online');
+  t += 2000; o.length = 0; r.handle('fa', { type: 'friendAdd', id: 'fb' });
+  ok(!lastTo('fb', 'friendRequest'), 'no second request to someone who is already a friend');
+  // both ask each other: the second request counts as a yes
+  r.join('fc', { name: 'Chi', token: TC }); const fc = r.players.get('fc');
+  t += 2000; r.handle('fc', { type: 'friendAdd', id: 'fa' }); r.handle('fa', { type: 'friendAdd', id: 'fc' });
+  ok(fa.pr.friends[GC] && fc.pr.friends[GA], 'asking someone who has already asked you makes you friends at once');
+  // a friend goes offline: still listed, and their garden can be visited
+  fb.pr.garden.plots['0,0'] = { seed: 'carrot', at: t }; o.length = 0; r.leave('fb');
+  const lb = lastTo('fa', 'friends').list.find((f) => f.gid === GB);
+  ok(lb && lb.online === false, 'a friend who leaves shows as offline');
+  r.handle('fa', { type: 'area', to: 'garden', gid: GB });
+  ok(fa.area === 'garden' && fa.visiting && lastTo('fa', 'gardenView').gid === GB && lastTo('fa', 'gardenView').garden.plots['0,0'], 'visiting an offline friend\'s garden');
+  r.handle('fa', { type: 'area', to: 'back' });
+  // the server restarts: friends are saved, and the garden is still found
+  r.leave('fa'); r.leave('fc'); r.leave('fg'); r = mk(); o.length = 0;
+  r.join('fa', { name: 'An', token: TA }); const fa2 = r.players.get('fa');
+  ok(lastTo('fa', 'friends').list.length === 2 && fa2.pr.friends[GB].name === 'Binh', 'friends survive a restart');
+  r.handle('fa', { type: 'area', to: 'garden', gid: GB });
+  ok(fa2.visiting && lastTo('fa', 'gardenView').gid === GB, 'a friend\'s garden is found after a restart');
+  r.handle('fa', { type: 'area', to: 'back' });
+  o.length = 0; r.join('fb', { name: 'Binh B', token: TB });
+  ok(lastTo('fa', 'friends').list.find((f) => f.gid === GB).name === 'Binh B' && o.some(([to, m]) => to === 'fa' && m.type === 'chat' && m.system && /online/.test(m.text)), 'a friend coming online is announced and their new name shown');
+  // removing ends the friendship on both sides, also for a friend who is offline
+  r.handle('fa', { type: 'friendRemove', gid: GB });
+  ok(!fa2.pr.friends[GB] && !r.players.get('fb').pr.friends[GA] && lastTo('fb', 'friends').list.length === 0, 'removing a friend ends it on both sides');
+  r.handle('fa', { type: 'friendRemove', gid: GC });
+  ok(!fa2.pr.friends[GC] && !(Room.fixProfile(st.load(TC)).friends || {})[GA], 'removing an offline friend updates their saved profile');
+  const many = {}; for (let i = 0; i < 80; i++) many['g' + i] = { name: 'F' + i }; many['bad id!'] = { name: 'x' };
+  const fx = Room.fixProfile({ friends: many });
+  ok(Object.keys(fx.friends).length <= 50 && !fx.friends['bad id!'], 'a saved friends list is capped and cleaned');
+}
+
 room.leave('a'); room.leave('b'); room.leave('c');
 ok(!room.plugins['xem-phim'].queue.current, 'rooms reset when everyone has left');
 

@@ -88,17 +88,21 @@ export function buocDi(vitri, phim, dt, vatCan = [], goc = 0) {
 const R = (x1, z1, x2, z2) => ({ x1, z1, x2, z2 });
 export const QUANG_TRUONG = R(-18, -18, 18, 18);
 
-export const KHU = ['chung', 'chiem-tinh', 'tro-choi', 'trong-cay', 'xem-phim', 'phong-hop', 'cua-hang'];
+// Areas added from campus-game (v4, then v5). The forest keeps that project's own coordinates, shifted by LECH_RUNG.
+// Since 2026-11-15 the Quiet Forest stands where the Garden Room used to be: its fence (x = 46.2 there) is the campus's
+// east fence at x = 30, and its gate (z = 5 there) faces the plaza's east exit at z = 0. The farm island is far away at x = -400.
+export const LECH_RUNG = { x: -16.2, z: -5 };
+export const RAO_DONG = Math.round((46.2 + LECH_RUNG.x) * 100) / 100; // the east fence line (30): west of it the plaza map, east of it the forest
+
+export const KHU = ['chung', 'chiem-tinh', 'tro-choi', 'xem-phim', 'phong-hop', 'cua-hang'];
 
 export const PHONG = {
   chung: { ten: 'Common Plaza', icon: 'chung', mau: '#FFB347', rect: null, xuatHien: { x: 2.4, z: 1.6 }, giua: { x: 0, z: 0 },
-    hanhLang: [R(-16, -26, -12, -18), R(12, -26, 16, -18), R(18, -2, 26, 2), R(-26, -2, -18, 2), R(12, 18, 16, 26), R(-16, 18, -12, 26), R(16, -24.5, 62.8, -19.5)] },
+    hanhLang: [R(-16, -26, -12, -18), R(12, -26, 16, -18), R(18, -2, 47 + LECH_RUNG.x, 2), R(-26, -2, -18, 2), R(12, 18, 16, 26), R(-16, 18, -12, 26)] }, // [2] = the path from the east exit to the forest gate
   'chiem-tinh': { ten: 'Astrology Room', icon: 'chiem-tinh', mau: '#8E5BFF', rect: R(-28, -44, -2, -26), xuatHien: { x: -14, z: -31.5 },
     giua: { x: -14, z: -32 }, cua: { mieng: { x: -14, z: -16 }, trong: { x: -14, z: -28.5 } }, canh: 's' },
   'tro-choi': { ten: 'Game Room', icon: 'tro-choi', mau: '#E4574F', rect: R(2, -50, 28, -26), xuatHien: { x: 14, z: -31.5 },
     giua: { x: 14, z: -38 }, cua: { mieng: { x: 14, z: -16 }, trong: { x: 14, z: -28.5 } }, canh: 's' },
-  'trong-cay': { ten: 'Garden Room', icon: 'trong-cay', mau: '#62C46A', rect: R(26, -16, 58, 16), xuatHien: { x: 29, z: 0 },
-    giua: { x: 41, z: -1 }, cua: { mieng: { x: 16, z: 0 }, trong: { x: 28.5, z: 0 } }, canh: 'w' },
   'xem-phim': { ten: 'Cinema', icon: 'xem-phim', mau: '#4A7BF0', rect: R(2, 26, 28, 52), xuatHien: { x: 14, z: 32 },
     giua: { x: 14, z: 34 }, cua: { mieng: { x: 14, z: 16 }, trong: { x: 14, z: 28.5 } }, canh: 'n', yawCam: Math.PI }, // rạp: camera ra sau hàng ghế để thấy màn hình
   'phong-hop': { ten: 'Meeting Room', icon: 'phong-hop', mau: '#F6E7C8', rect: R(-44, -10, -26, 10), xuatHien: { x: -29, z: 0 },
@@ -107,12 +111,9 @@ export const PHONG = {
     giua: { x: -14, z: 38 }, cua: { mieng: { x: -14, z: 16 }, trong: { x: -14, z: 28.5 } }, canh: 'n' },
 };
 
-// Areas added from campus-game (v4, then v5). The forest keeps that project's own coordinates shifted by LECH_RUNG so
-// that its east fence (x = 46.2) lands on Top1's east fence (x = 62); the farm island is far away at x = -400.
-export const LECH_RUNG = { x: 15.8, z: -27 };
 export const RUNG = R(47 + LECH_RUNG.x, -40 + LECH_RUNG.z, 138 + LECH_RUNG.x, 38 + LECH_RUNG.z); // forest bounds
 export const VUON = R(-436, -32, -364, 32);                                                   // farm island bounds (v5: 72 x 64 m)
-export const LOI_RUNG = PHONG.chung.hanhLang[6];                                               // path plaza -> forest gate
+export const LOI_RUNG = PHONG.chung.hanhLang[2];                                               // path plaza east exit -> forest gate
 export const KHU_PHU = {
   rung: { ten: 'Quiet Forest', icon: 'trong-cay', mau: '#2E7D32' },
   vuon: { ten: 'My Garden', icon: 'trong-cay', mau: '#62C46A' },
@@ -139,7 +140,7 @@ function tuongQuanh(r, lo = {}, phong) {
 function taoTuong() {
   const t = [];
   t.push(...tuongQuanh(QUANG_TRUONG, { n: [[-16, -12], [12, 16]], s: [[-16, -12], [12, 16]], e: [[-2, 2]], w: [[-2, 2]] }, 'chung'));
-  const loi = PHONG.chung.hanhLang[6]; // forest path
+  const loi = LOI_RUNG; // forest path
   for (const h of PHONG.chung.hanhLang) {
     const doc = h.z2 - h.z1 > h.x2 - h.x1;
     if (doc) {
@@ -148,7 +149,7 @@ function taoTuong() {
         t.push({ loai: 'hop', x1: h.x2 - DAY, x2: h.x2 + DAY, z1: h.z1, z2: loi.z1, phong: 'hanh-lang' }, { loai: 'hop', x1: h.x2 - DAY, x2: h.x2 + DAY, z1: loi.z2, z2: h.z2, phong: 'hanh-lang' });
       } else t.push({ loai: 'hop', x1: h.x2 - DAY, x2: h.x2 + DAY, z1: h.z1, z2: h.z2, phong: 'hanh-lang' });
     } else {
-      const xa = h === loi ? h.x1 + DAY : h.x1; const xb = h === loi ? 62 : h.x2; // the path ends at the fence gate
+      const xa = h.x1; const xb = h === loi ? RAO_DONG : h.x2; // the forest path ends at the fence gate
       t.push({ loai: 'hop', x1: xa, x2: xb, z1: h.z1 - DAY, z2: h.z1 + DAY, phong: 'hanh-lang' }, { loai: 'hop', x1: xa, x2: xb, z1: h.z2 - DAY, z2: h.z2 + DAY, phong: 'hanh-lang' });
     }
   }
@@ -188,10 +189,12 @@ function taoBanDo() {
   // ---- Phòng chung (quảng trường)
   them({ id: 'dong-lua', loai: 'trang-tri', phong: 'chung', x: 0, z: 0, ten: 'Campfire', moTa: 'Where everyone gathers. New arrivals appear right here.' });
   tron(0, 0, 1.6);
-  const cong = { 'chiem-tinh': [-14, -18], 'tro-choi': [14, -18], 'trong-cay': [18, 0], 'xem-phim': [14, 18], 'phong-hop': [-18, 0], 'cua-hang': [-14, 18] };
+  const cong = { 'chiem-tinh': [-14, -18], 'tro-choi': [14, -18], 'xem-phim': [14, 18], 'phong-hop': [-18, 0], 'cua-hang': [-14, 18] };
   for (const [id, [x, z]] of Object.entries(cong)) {
     them({ id: `cong-${id}`, loai: 'cong', phong: 'chung', x, z, den: id, ten: PHONG[id].ten, mau: PHONG[id].mau, moTa: `Walk through this gate to reach the ${PHONG[id].ten}.` });
   }
+  // the east gate leads to the Quiet Forest (where the Garden Room used to be)
+  them({ id: 'cong-rung', loai: 'cong', phong: 'chung', x: 18, z: 0, den: 'rung', ten: KHU_PHU.rung.ten, mau: KHU_PHU.rung.mau, moTa: 'Walk through this gate and along the path to reach the Quiet Forest.' });
   [[-10, 6], [10, 6], [0, 11.5], [0, -11]].forEach(([x, z], i) => {
     const b = { id: `ban-hoc-${i + 1}`, ten: 'Study table', phong: 'chung', x, z, r: 1.1, soGhe: 4,
       moTa: 'Sit down to study together: you earn Xu while seated and get a private table chat.', doVat: ['sach', 'den'] };
@@ -226,19 +229,6 @@ function taoBanDo() {
     ghe.push(...gheQuanh(b, b.soGhe, b.rg, 'tro-choi', b.soGhe === 2 ? Math.PI / 2 : b.soGhe === 4 ? Math.PI / 4 : 0));
   }
 
-  // ---- Trồng cây
-  let n = 0;
-  for (const z of [-12.5, -9, -5.5]) for (const x of [32, 37]) {
-    n++; them({ id: `luong-${n}`, loai: 'luong', phong: 'trong-cay', x, z, ten: `Garden bed ${n}`, luong: n - 1, moTa: 'Plant a vegetable seed, water and fertilise it, then harvest. Press E next to the bed.' });
-    hop(x - 1.7, z - 1.2, x + 1.7, z + 1.2);
-  }
-  const hoCa = { id: 'ho-ca', x: 50, z: -8, r: 4.5 }; const hoCau = { id: 'ho-cau', x: 50, z: 9, r: 5 };
-  nuoc.push(hoCa, hoCau); tron(hoCa.x, hoCa.z, hoCa.r); tron(hoCau.x, hoCau.z, hoCau.r);
-  them({ id: 'ho-ca', loai: 'nuoc', phong: 'trong-cay', x: hoCa.x, z: hoCa.z, r: hoCa.r, ten: 'Fish pond', moTa: 'Your fish live here too: release, feed or take them out. Press E at the edge.' });
-  them({ id: 'ben-cau', loai: 'vat', phong: 'trong-cay', x: 44.6, z: 9, diemDung: { x: 44.2, z: 9 }, ten: 'Fishing dock', moTa: 'Stand at the end of the dock and press E to cast your line.' });
-  them({ id: 'dai-phun-nuoc', loai: 'trang-tri', phong: 'trong-cay', x: 38, z: 6, ten: 'Fountain' }); tron(38, 6, 2.2);
-  them({ id: 'quay-hang', loai: 'vat', phong: 'trong-cay', x: 31, z: 11.5, ten: 'Garden stall', moTa: 'Buy seeds, fish and supplies with Xu, or sell your produce. Press E at the counter.' });
-  hop(29, 10.3, 33, 12.7);
 
   // ---- Xem phim
   const mh = { id: 'man-hinh', loai: 'man-hinh', phong: 'xem-phim', x: 15, z: 51.4, rong: 12, cao: 6.75, ten: 'Big screen', moTa: 'Paste a YouTube link in the Cinema queue panel and everyone inside watches together.' };
@@ -276,7 +266,6 @@ function taoBanDo() {
       chung: { troi: ['#7EC3EE', '#CDEFD8'], anhSang: 1.0 },
       'chiem-tinh': { troi: ['#1B1440', '#4A3590'], anhSang: 0.5, anh: '#A58BFF' },
       'tro-choi': { troi: ['#7EC3EE', '#CDEFD8'], anhSang: 1.0 },
-      'trong-cay': { troi: ['#78C4F2', '#D6F3DC'], anhSang: 1.05 },
       'xem-phim': { troi: ['#1E2350', '#3B3F7A'], anhSang: 0.38, anh: '#8C95FF' },
       'phong-hop': { troi: ['#7EC3EE', '#CDEFD8'], anhSang: 1.0 },
       'cua-hang': { troi: ['#7EC3EE', '#CDEFD8'], anhSang: 1.0 },
@@ -339,8 +328,8 @@ export function timDuong(tu, den) {
   const phiaRung = (v) => v === 'rung' || v === 'loi-rung';
   if (va === 'vuon' || vb === 'vuon' || (phiaRung(va) && phiaRung(vb))) return [{ x: den.x, z: den.z }]; // v4 areas: walk straight
   const a = phiaRung(va) ? 'chung' : va; const b = phiaRung(vb) ? 'chung' : vb;
-  const zL = (LOI_RUNG.z1 + LOI_RUNG.z2) / 2; // the forest path branches east off the Game Room corridor (x = 14)
-  const quaLoi = [{ x: 14, z: -16.5 }, { x: 14, z: zL }, { x: 20, z: zL }];
+  const zL = (LOI_RUNG.z1 + LOI_RUNG.z2) / 2; // the forest path leaves the plaza through its east exit
+  const quaLoi = [{ x: 16, z: zL }, { x: 20.5, z: zL }];
   const diem = [];
   if (phiaRung(va)) diem.push(...quaLoi.slice().reverse());
   if (a !== b) {

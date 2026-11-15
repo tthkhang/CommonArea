@@ -95,7 +95,61 @@ export function initFeatures(ctx, extras) {
   const visitBtn = document.createElement('button'); visitBtn.textContent = '🌱 Visit garden'; visitBtn.className = 'primary';
   $('#playerCard .btns').prepend(visitBtn);
   visitBtn.onclick = () => { const q = state.players.get(state.selectedPlayer); if (!q || !q.ownGid) return; $('#playerCard').classList.add('hidden'); visitGarden(q.ownGid, q.name); };
-  setInterval(() => { const q = state.players.get(state.selectedPlayer); visitBtn.classList.toggle('hidden', !q || !q.ownGid); }, 300);
+  // ---- friends: ask on a player's card, answer in the Friends panel, visit their garden from the list (also when they are offline) ----
+  state.friends = { list: [], requests: [] };
+  const asked = new Map(); // player id -> when I sent them a request
+  const isFriend = (gid) => state.friends.list.some((f) => f.gid === gid);
+  const askedMe = (gid) => state.friends.requests.some((r) => r.gid === gid);
+  const friendBtn = document.createElement('button'); friendBtn.className = 'nut nho';
+  visitBtn.after(friendBtn);
+  friendBtn.onclick = () => {
+    const q = state.players.get(state.selectedPlayer); if (!q || !q.ownGid || isFriend(q.ownGid)) return;
+    if (askedMe(q.ownGid)) send({ type: 'friendAnswer', gid: q.ownGid, ok: true });
+    else { send({ type: 'friendAdd', id: q.id }); asked.set(q.id, performance.now()); }
+    paintCard();
+  };
+  function paintCard() {
+    const q = state.players.get(state.selectedPlayer), real = !!(q && q.ownGid);
+    visitBtn.classList.toggle('hidden', !real);
+    friendBtn.classList.toggle('hidden', !real || !state.profile || !(me() || {}).ownGid);
+    if (!real) return;
+    const friend = isFriend(q.ownGid), waiting = !friend && performance.now() - (asked.get(q.id) || -1e9) < 120000;
+    const label = friend ? '✓ Friends' : askedMe(q.ownGid) ? '🤝 Accept friend' : waiting ? '⏳ Request sent' : '➕ Add friend';
+    if (friendBtn.textContent !== label) friendBtn.textContent = label;
+    friendBtn.disabled = friend || (waiting && !askedMe(q.ownGid));
+  }
+  setInterval(paintCard, 300);
+  function renderFriends() {
+    const f = state.friends;
+    const reqs = f.requests.map((r) => `<div class="brow req"><span class="nm">💌 <b>${esc(r.name)}</b> wants to be friends</span><button class="primary" data-yes="${r.gid}">Accept</button><button data-no="${r.gid}">Decline</button></div>`).join('');
+    const rows = f.list.map((r) => `<div class="brow"><i class="dot ${r.online ? 'on' : ''}"></i><span class="nm">${esc(r.name)}</span><span class="sc">${r.online ? 'online' : 'offline'}</span><button class="primary" data-visit="${r.gid}" data-name="${esc(r.name)}">🌱 Visit garden</button><button data-del="${r.gid}" data-name="${esc(r.name)}" title="Remove this friend">✕</button></div>`).join('');
+    ui.friends.querySelector('.body').innerHTML = `<div class="small muted note">To add a friend, click a player in the game and choose <b>➕ Add friend</b>. Once they accept, you can visit each other's garden from this list at any time, even when your friend is offline.</div>
+      ${reqs ? '<h4>Friend requests</h4>' + reqs : ''}
+      <h4>My friends${f.list.length ? ' (' + f.list.length + ')' : ''}</h4>${rows || '<div class="muted empty">No friends yet. Meet other players in the plaza and add them!</div>'}`;
+  }
+  function paintFriendCount() {
+    const n = state.friends.requests.length, b = ui.friendsBtn.querySelector('.n');
+    b.textContent = n; b.classList.toggle('hidden', !n);
+  }
+  let friendPoll = null;
+  function onFriends(m) {
+    state.friends = { list: m.list || [], requests: m.requests || [] };
+    paintFriendCount(); paintCard();
+    if (!ui.friends.classList.contains('hidden')) renderFriends();
+    clearTimeout(friendPoll); // an unanswered request runs out after two minutes: ask again then, so it leaves the list
+    if (state.friends.requests.length) friendPoll = setTimeout(() => send({ type: 'friends' }), 125000);
+  }
+  ui.friendsBtn.onclick = () => { send({ type: 'friends' }); openPanel(ui.friends); renderFriends(); };
+  ui.friends.querySelector('.body').onclick = (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.visit) { closePanels(); visitGarden(b.dataset.visit, b.dataset.name); }
+    else if (b.dataset.yes) send({ type: 'friendAnswer', gid: b.dataset.yes, ok: true });
+    else if (b.dataset.no) send({ type: 'friendAnswer', gid: b.dataset.no, ok: false });
+    else if (b.dataset.del) {
+      if (b.dataset.sure) send({ type: 'friendRemove', gid: b.dataset.del });
+      else { b.dataset.sure = '1'; b.textContent = 'Remove ' + b.dataset.name + '?'; b.classList.add('danger'); }
+    }
+  };
 
   // ===================================================================== HUD
   function renderHud() {
@@ -157,7 +211,7 @@ export function initFeatures(ctx, extras) {
 
   // ===================================================================== panels: shop / bag / tank / earnings / market / merchant / garden pickers
   let shopTab = 'crop', marketTab = 'browse';
-  const PANELS = () => [ui.shop, ui.bag, ui.pond, ui.earn, ui.seeds, ui.market, ui.merchantP, ui.pots, ui.care, ui.board, ui.food, ui.house, ui.pen];
+  const PANELS = () => [ui.shop, ui.bag, ui.pond, ui.earn, ui.seeds, ui.market, ui.merchantP, ui.pots, ui.care, ui.board, ui.food, ui.house, ui.pen, ui.friends];
   ui.food.querySelector('.body').onclick = (e) => { const b = e.target.closest('button'); if (b && b.dataset.food) send({ type: 'buyFood', item: b.dataset.food, stand: ui.food.dataset.stand }); };
   // ---- weekly boards (GDD §1) ----
   function renderBoard(m) {
@@ -315,7 +369,7 @@ export function initFeatures(ctx, extras) {
   }
   ui.pond.querySelector('.body').onclick = (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.feed) { closePanels(); if (state.area === 'garden') garden.startFeeding(); else send({ type: 'pondFeed' }); } // no tower at the Garden Room pond
+    if (b.dataset.feed) { closePanels(); if (state.area === 'garden') garden.startFeeding(); else send({ type: 'pondFeed' }); } // (the campus pond went with the Garden Room)
     if (b.dataset.take) send({ type: 'pondTake', uid: +b.dataset.take });
     if (b.dataset.rel) send({ type: 'pondRelease', uid: +b.dataset.rel });
     if (b.dataset.td) send({ type: 'tankDecor', item: b.dataset.td });
@@ -536,7 +590,7 @@ export function initFeatures(ctx, extras) {
   function splash(x, z, big) { for (let i = 0; i < (big ? 2 : 1); i++) { const r = new THREE.Mesh(new THREE.RingGeometry(0.15, 0.24, 20), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false })); r.rotation.x = -Math.PI / 2; r.position.set(x, 0.22, z); scene.add(r); splashes.push({ m: r, t: -i * 0.2 }); } blip([big ? 220 : 340, 160], 0.05, 0.07); }
   ui.fishGame.innerHTML = '<div class="ttl">🎣 Keep the fish in the green: tap <kbd>E</kbd> / <kbd>Space</kbd> again and again!</div><div class="vbox"><div class="vtrack"><div class="vzone"></div><div class="vfish">🐟</div></div><div class="vprog"><div></div></div></div><div class="st"></div>';
   const tipWorld = () => { const p = me(); p.obj.updateMatrixWorld(true); return rodPiv.localToWorld(new THREE.Vector3(0, 2.9, 0)); };
-  // a fishing spot (WORLD.fishSpots): a chair by the forest lake / stream (you sit), or Top1's dock in the Garden Room (you stand)
+  // a fishing spot (WORLD.fishSpots): a chair by the forest lake / stream (you sit), or a dock (you stand; none since the Garden Room was removed)
   function nearSpot(p) {
     let best = -1, bd = 1.9;
     WORLD.fishSpots.forEach((s, i) => { if ((s.area || 'forest') !== state.area || (s.room || null) !== (p.room || null)) return; const d = Math.hypot(p.x - s.x, p.z - s.z); if (d < bd) { bd = d; best = i; } });
@@ -759,7 +813,6 @@ export function initFeatures(ctx, extras) {
       if (nearMerchant(p)) { openPanel(ui.merchantP); renderMerchant(); return true; }
       if (nearMarketBoard(p)) { openMarket('browse', false); return true; }
       if (!p.room && Math.hypot(p.x - WORLD.board.front.x, p.z - WORLD.board.front.z) < 3.4) { send({ type: 'board' }); return true; }
-      if (p.room === 'trong-cay' && garden.roomInteract(p)) return true; // Top1's Garden Room: beds + fish pond
     }
     if (state.area === 'garden') return garden.interact(p);
     return false;
@@ -776,7 +829,6 @@ export function initFeatures(ctx, extras) {
       if (nearMerchant(p)) return '<kbd>E</kbd> talk to the Merchant 🧳';
       if (nearMarketBoard(p)) return '<kbd>E</kbd> view Market 🏪';
       if (!p.room && Math.hypot(p.x - WORLD.board.front.x, p.z - WORLD.board.front.z) < 3.4) return '<kbd>E</kbd> view Weekly Leaderboard 🏆';
-      if (p.room === 'trong-cay') { const h = garden.roomHint(p); if (h) return h; }
     }
     if (state.area === 'garden') return garden.hint(p);
     return '';
@@ -810,6 +862,8 @@ export function initFeatures(ctx, extras) {
       case 'gardenView': state.visit = { gid: m.gid, owner: m.owner, garden: Object.assign({ plots: {}, flowerPots: {}, trees: {}, fish: [], decor: [], tankDecor: [], boosts: [] }, m.garden), likes: m.likes, liked: m.liked }; break;
       case 'liked': if (state.visit && state.visit.gid === m.gid) { state.visit.liked = true; state.visit.likes = m.likes; } floatText('❤️', '#ff6b81'); blip([660, 990], 0.08, 0.1); renderHud(); break;
       case 'board': renderBoard(m); break;
+      case 'friends': onFriends(m); break;
+      case 'friendRequest': toast('💌 ' + m.name + ' wants to be friends. Open 👥 Friends to answer.'); blip([660, 880], 0.08, 0.1); break;
       case 'quiz': showQuiz(m); break;
       case 'quizResult':
         if (m.ok) { ui.quiz.classList.add('hidden'); toast('✅ ' + m.text + ' +' + ECON.pomodoroBonus + ' Xu'); }
@@ -867,7 +921,6 @@ export function initFeatures(ctx, extras) {
     updateFishing(dt, t);
     updateAct(dt, t);
     if (state.area === 'garden') garden.update(dt, t);
-    else if (p && p.room === 'trong-cay') garden.updateRoom(dt, t);
     // travelling merchant on the lobby
     const mm = state.merchant, showM = !!mm && state.area === 'campus';
     merchantObj.visible = showM;
@@ -1457,48 +1510,7 @@ export function initFeatures(ctx, extras) {
     }
     function reset() { if (tower) { tower = null; } anim = null; pole.visible = false; elev = null; farm.setCut('none'); if (camSaved) { ctx.cam.dist = camSaved.d; ctx.cam.pitch = camSaved.pitch; camSaved = null; } hideIcons(); }
 
-    // ---------- combined game: Top1's Garden Room — 6 beds of vegetables + the fish pond, same rules and crop models ----------
-    const bedG = new THREE.Group(); scene.add(bedG); if (ctx.addToRoom) ctx.addToRoom('trong-cay', bedG);
-    const bedObjs = new Map(); let bedT = 1;
-    const myBeds = () => (state.profile && state.profile.garden.beds) || {};
-    const nearBed = (p) => { let best = -1, bd = 3.1; WORLD.beds.forEach((b, i) => { const d = Math.hypot(p.x - b.x, p.z - b.z); if (d < bd) { bd = d; best = i; } }); return best; };
-    const nearPond2 = (p) => Math.hypot(p.x - WORLD.pond2.x, p.z - WORLD.pond2.z) < WORLD.pond2.r + 2.4;
-    function refreshBeds() {
-      const seen = new Set();
-      for (const [k, rec] of Object.entries(myBeds())) {
-        const b = WORLD.beds[+k]; if (!b) continue;
-        const pg = prog(rec, 'bed'), st = pg >= 1 ? 3 : Math.min(2, Math.floor(pg * 3)), key = rec.s + '|' + st;
-        seen.add(k);
-        const o = bedObjs.get(k); if (o && o.key === key) continue;
-        if (o) bedG.remove(o.g);
-        const grp = new THREE.Group();
-        for (let i = 0; i < 3; i++) for (const dz of [-0.5, 0.5]) { const c = buildCrop(rec.s, st); c.position.set(b.x - 1 + i, 0.5, b.z + dz); c.scale.setScalar(0.8); grp.add(c); }
-        bedG.add(grp); bedObjs.set(k, { g: grp, key });
-      }
-      for (const [k, o] of bedObjs) if (!seen.has(k)) { bedG.remove(o.g); bedObjs.delete(k); }
-    }
-    function updateRoom(dt, t) {
-      if (!state.profile) return;
-      bedT += dt; if (bedT > 0.5) { bedT = 0; refreshBeds(); }
-      for (const o of bedObjs.values()) o.g.children.forEach((c) => { if (c.userData.spark) c.userData.spark.rotation.y += dt * 3; });
-    }
-    function roomInteract(p) {
-      const i = nearBed(p);
-      if (i >= 0) { const rec = myBeds()[i]; if (!rec) openPlantPicker('bed', String(i)); else if (prog(rec, 'bed') >= 1) send({ type: 'harvest', where: 'bed', id: String(i) }); else openCare('bed', String(i)); return true; }
-      if (nearPond2(p)) { openPanel(ui.pond); renderPond(); return true; }
-      return false;
-    }
-    function roomHint(p) {
-      const i = nearBed(p);
-      if (i >= 0) {
-        const rec = myBeds()[i]; if (!rec) return '<kbd>E</kbd> plant vegetables in this bed 🌱';
-        const info = C.plantInfo(rec.s), pg = prog(rec, 'bed');
-        return pg >= 1 ? `<kbd>E</kbd> harvest ${info.icon} ${info.name}` : `${info.icon} ${info.name} ${Math.floor(pg * 100)}% · <kbd>E</kbd> tend${rec.w ? ' 💧' : ''}${rec.f ? ' 🧪' : ''}`;
-      }
-      if (nearPond2(p)) return '<kbd>E</kbd> look after your fish 🐠';
-      return '';
-    }
-    return { rebuild: sync, sync, update, interact, hint, startFeeding, reset, updateRoom, roomInteract, roomHint, constrain, elevated: () => !!elev, busy: () => !!anim || !!tower, yOff: () => (tower ? tower.y : elevH()), data: g };
+    return { rebuild: sync, sync, update, interact, hint, startFeeding, reset, constrain, elevated: () => !!elev, busy: () => !!anim || !!tower, yOff: () => (tower ? tower.y : elevH()), data: g };
   }
 
   // ===================================================================== forest ambience (procedural Web Audio)
@@ -1582,6 +1594,7 @@ export function initFeatures(ctx, extras) {
         <button id="vcGarden" class="primary">🌱 My Garden</button>
         <button id="vcBag" title="Bag (B)">🎒 Bag</button>
         <button id="vcEarn" title="Today's earnings">📒 Earnings</button>
+        <button id="vcFriends" title="Friends: visit their gardens">👥 Friends<span class="n hidden"></span></button>
         <button id="vcBoost" class="hidden" title="Whole garden grows 50% faster for 1 hour">⚡ Boost</button>
         <button id="vcLike" class="hidden primary">🤍 Like</button>
         <button id="vcBack" class="hidden">🏫 Back to Plaza</button>
@@ -1595,6 +1608,7 @@ export function initFeatures(ctx, extras) {
     const bag = mk('vcBag2', '🎒 Bag'), pond = mk('vcPond', '🐠 Fish Tank'), earn = mk('vcEarn2', '📒 Today\'s earnings'), seeds = mk('vcSeeds', '🌱 Choose seeds');
     const market = mk('vcMarket', '🏪 Market', '<span class="wallet"></span>'), merchantP = mk('vcMerchant', '🧳 Merchant'), pots = mk('vcPots', '🌷 Cloud Flower Garden'), care = mk('vcCare', '🌱 Care');
     const board = mk('vcBoard', '🏆 Best of the Week'), food = mk('vcFood', '🍽️ Food & drinks'), house = mk('vcHouse', '🏠 Decorate the house'), pen = mk('vcPen', '🐔 Animal pen');
+    const friends = mk('vcFriends2', '👥 Friends'); friends.classList.add('small-panel');
     food.classList.add('small-panel');
     const quiz = document.createElement('div'); quiz.className = 'modal hidden'; quiz.innerHTML = `<div class="panel vc-quiz"><div class="big">⏱️📚</div><h3>25 focused minutes complete!</h3><p class="sub"></p><div class="q"></div><div class="opts"></div><div class="small muted src"></div></div>`;
     document.body.appendChild(quiz);
@@ -1607,7 +1621,7 @@ export function initFeatures(ctx, extras) {
     const fishGame = document.createElement('div'); fishGame.id = 'vcFish'; fishGame.className = 'panel hidden';
     fishGame.innerHTML = '<div class="ttl">🎣 Reel it in! Press <kbd>E</kbd> / <kbd>Space</kbd> when the needle is in the green</div><div class="track"><div class="zone"></div><div class="needle"></div></div><div class="st"></div>';
     document.getElementById('hud').appendChild(fishGame);
-    return { hud, shop, bag, pond, earn, seeds, market, merchantP, pots, care, board, quiz, food, house, pen, gate, afk, fade, fishGame,
+    return { hud, shop, bag, pond, earn, seeds, market, merchantP, pots, care, board, quiz, food, house, pen, gate, afk, fade, fishGame, friends, friendsBtn: hud.querySelector('#vcFriends'),
       boostBtn: hud.querySelector('#vcBoost'), likeBtn: hud.querySelector('#vcLike'), backBtn: hud.querySelector('#vcBack'), status: hud.querySelector('#vcStatus'), xu: hud.querySelector('#vcXu'), cap: hud.querySelector('#vcCap'), gardenBtn: hud.querySelector('#vcGarden'), bagBtn: hud.querySelector('#vcBag'), earnBtn: hud.querySelector('#vcEarn'), carry: hud.querySelector('#vcCarry'), forestVol: hud.querySelector('#vcForestVol') };
   }
 

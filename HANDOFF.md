@@ -28,6 +28,7 @@ Add `?test` to the address in solo mode (or `TEST_MODE=1` for the server) for 50
 - **v4/v5 code is hosted, not rewritten.** `features.js`, `world2.js` and `farm3d.js` get a `ctx` from `main.js`; `v4kit.js` re-implements v4's drawing helpers in Top1's toon + outline style.
 - **Game Room.** `shared/games.js` has three rule engines as pure functions on plain-JSON states (`Ludo`, `Cards`, `Werewolf`) and the table plug-in (`makeGameRoom`): seats → slots, lobby, host, computer players, 20-second clock, spectators, chat channels, results, saved games. `room.js` calls its `canSit / onSit / onStand / onTableChat`. It sends each player a **view** (`tro-choi.state`) with only what they may know, and everyone in the room a summary (`tro-choi.tables`). The client (`rooms/games.js`) draws the table card, lobby, chat and results and mounts one screen per game (`games/ludo.js`, `cards.js`, `werewolf.js`); a screen only renders views and sends clicks back (`tro-choi.move`). Colour Match is different: its rules (`games/match3.js`) run in the browser and the room only stores progress (`tro-choi.matchSave / matchDone`).
 - **Astrology Room.** `astro/` is pure maths (calendar, numerology, Tử Vi, western chart, places, the birth form's checks). `astro/report.js` turns a birth record into the reading as HTML strings, the same for the board and the downloaded file. `text/*.js` holds the passages, keyed by number / star / sign. The server half keeps one birth record per player name and has `server.mjs` add a CSV line per reading.
+- **Friends.** `room.js` (`friendAdd / friendAnswer / friendRemove / friends`) keeps `profile.friends` (garden id → name) on both sides; requests live in memory for two minutes. A garden id is `gidOf(token)`, so a friend's garden is found even when they are offline (`tokenOf`, `findGarden`). The client part is in `features.js` (player-card button, Friends panel).
 - Identifiers from Top1 are Vietnamese (`dungTheGioi`, `buocDi`, `PHONG`…); all player-facing text is English.
 
 ## Where to add things
@@ -51,17 +52,17 @@ Add `?test` to the address in solo mode (or `TEST_MODE=1` for the server) for 50
 ## Before you share a change
 
 ```bash
-node tests/rules.test.mjs            # 101 rule checks
+node tests/rules.test.mjs            # 113 rule checks
 node tests/games.test.mjs            # 165 Game Room checks
 node tests/match.test.mjs            # 34 Colour Match checks
 node tests/astro.test.mjs && node tests/reading.test.mjs && node tests/text/all.check.mjs
-node --test tests/F*.test.js         # 54 map checks
+node --test tests/F*.test.js         # 55 map checks
 node tests/multiplayer-smoke.mjs 5180   # with `PORT=5180 ADMIN_PASSWORD=admin node server.mjs` running (Node 22+)
 ```
 
 ## Decisions already made (do not undo without asking Khang)
 
-Node.js server · keep Top1's rooms **and** the forest + private island · closed rooms like campus-export · English interface · Game Room with shared tables as in the spec plus solo practice with computer players · reading texts in English at the spec's length.
+Node.js server · Top1's rooms (without the Garden Room, removed at Khang's request on 2026-11-15: the Quiet Forest stands at the plaza's east gate instead) plus the forest + private island · closed rooms like campus-export · English interface · Game Room with shared tables as in the spec plus solo practice with computer players · reading texts in English at the spec's length.
 Smaller choices and the reasons are in `README.md` → "Decisions".
 
 ## Not done yet

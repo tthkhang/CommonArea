@@ -660,6 +660,7 @@ function cham(x, y) {
 }
 function chamVat(id) {
   if (rooms[ME.room]?.onClick?.(id)) { dongBang(); return; } // the room you are in may handle a click itself (Madame Star, game tables)
+  if (id === 'cong-rung') { dongBang(); diToi({ x: WORLD.forestGate.x, z: WORLD.forestGate.z }); return; } // the east gate: walk up to the forest gate
   if (id.startsWith('cong-')) { dongBang(); diToi(PHONG[id.slice(5)].giua); return; }
   const key = GHE_KEY[id];
   if (key) {

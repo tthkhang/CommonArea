@@ -82,8 +82,8 @@ export function buildExtras(ctx) {
   // =====================================================================
   // --- path from the plaza to the forest gate (v4 frame: its east fence x = 46 is Top1's east fence) ---
   frame(true);
-  box(24, 0.24, 3.2, '#d7b98e', 34.2, 0.09, 5, scene, { cast: false });
-  for (let x = 24; x < 46; x += 2.2) box(0.9, 0.26, 0.7, '#c4a27a', x + rand() * 0.6, 0.1, 4 + rand() * 2, scene, { cast: false });
+  box(12, 0.24, 3.2, '#d7b98e', 40.2, 0.09, 5, scene, { cast: false }); // only as long as the path from the plaza's east exit (x 34.2 .. 46.2 here)
+  for (let x = 35; x < 46; x += 2.2) box(0.9, 0.26, 0.7, '#c4a27a', x + rand() * 0.6, 0.1, 4 + rand() * 2, scene, { cast: false });
   const campusGate = archGate(46.2, 5, false, 'QUIET FOREST', '#2e7d32');
   addCircleCol(46.2, 2, 0.65); addCircleCol(46.2, 8, 0.65);
   // soft green "portal" glow inside the gate
@@ -97,8 +97,8 @@ export function buildExtras(ctx) {
   const wfTex = waterTexture();
 
   frame(false);
-  // --- shopkeepers behind Top1's Shop counter and Garden Room stall (v4's kiosk keeper) ---
-  [[-2.95, 36, -Math.PI / 2, 'cua-hang', '#ff8a65'], [31, 13.6, Math.PI, 'trong-cay', '#62c46a']].forEach(([x, z, ry, room, color], i) => {
+  // --- the shopkeeper behind Top1's Shop counter (v4's kiosk keeper) ---
+  [[-2.95, 36, -Math.PI / 2, 'cua-hang', '#ff8a65']].forEach(([x, z, ry, room, color], i) => {
     const keeper = makeCharacter(color);
     keeper.position.set(x, 0, z); keeper.rotation.y = ry; ctx.scene.add(keeper); ctx.addToRoom(room, keeper);
     animated.push((dt, t) => { keeper.hoatCanh(t, 'dung'); keeper.rotation.y = ry + Math.sin(t * 0.5 + i) * 0.25; });

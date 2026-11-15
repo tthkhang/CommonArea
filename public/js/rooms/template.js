@@ -1,5 +1,5 @@
 // TEMPLATE for a room's client half (from campus-export). Copy this file, then:
-//   1. set `id` to the room's id on the map (logic.js PHONG: 'chiem-tinh', 'tro-choi', 'trong-cay', 'phong-hop', 'cua-hang', ...)
+//   1. set `id` to the room's id on the map (logic.js PHONG: 'chiem-tinh', 'tro-choi', 'phong-hop', 'cua-hang', ...)
 //   2. register the module in rooms/index.js
 //   3. (optional) give the room its own server class in public/shared/roomplugins.js -> REGISTRY
 //

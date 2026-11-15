@@ -8,7 +8,7 @@ const trong = (p, o) => o.loai === 'tron' ? Math.hypot(p.x - o.x, p.z - o.z) < o
   : p.x > o.x1 - BAN_KINH + 0.01 && p.x < o.x2 + BAN_KINH - 0.01 && p.z > o.z1 - BAN_KINH + 0.01 && p.z < o.z2 + BAN_KINH - 0.01;
 
 test('7 khu đúng id, có tên tiếng Việt, điểm xuất hiện nằm trong khu và không đè vật cản', () => {
-  assert.deepEqual(KHU, ['chung', 'chiem-tinh', 'tro-choi', 'trong-cay', 'xem-phim', 'phong-hop', 'cua-hang']);
+  assert.deepEqual(KHU, ['chung', 'chiem-tinh', 'tro-choi', 'xem-phim', 'phong-hop', 'cua-hang']); // the Garden Room was removed (2026-11-15)
   for (const id of KHU) {
     const p = PHONG[id];
     assert.ok(p.ten.length > 3, id);
@@ -23,7 +23,7 @@ test('Phòng chung: xuất hiện cách đống lửa ≤ 3 m', () => {
 });
 test('6 cổng vòm ở quảng trường, mỗi cổng dẫn tới một phòng', () => {
   const cong = BAN_DO.vat.filter((v) => v.loai === 'cong');
-  assert.deepEqual(cong.map((c) => c.id).sort(), KHU.filter((k) => k !== 'chung').map((k) => `cong-${k}`).sort());
+  assert.deepEqual(cong.map((c) => c.id).sort(), KHU.filter((k) => k !== 'chung').map((k) => `cong-${k}`).concat('cong-rung').sort()); // the east gate leads to the Quiet Forest
   for (const c of cong) assert.equal(phongTaiViTri(c.x, c.z), 'chung', c.id);
 });
 test('≥ 4 bàn học chung, mỗi bàn 4 ghế; có góc nhạc', () => {

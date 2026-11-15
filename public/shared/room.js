@@ -9,7 +9,7 @@
   // ---- World layout ----
   // Combined game: the map comes from Top1Server (public/js/logic.js) and is handed in with Room.setMap(map) before
   // the first Room is created. campus-game's own areas (forest, private farm island) keep that project's numbers (v5); the
-  // forest is shifted by map.LECH_RUNG so that it starts right behind Top1's east fence.
+  // forest is shifted by map.LECH_RUNG so that it starts right behind the campus's east fence (where the Garden Room used to be).
   const Catalog = (typeof module !== 'undefined' && module.exports) ? require('./catalog.js') : root.VCCatalog;
   const ECON = Catalog.ECON;
   const Quiz = (typeof module !== 'undefined' && module.exports) ? require('./quiz.js') : root.VCQuiz;
@@ -61,14 +61,11 @@
     WORLD.forestOffset = { x: ox, z: oz };
     WORLD.forestGate = F(43, 5);   // on the forest path, just inside the east fence
     WORLD.forestExit = F(48, 5);   // forest side: walk back west through the gate corridor
-    WORLD.fenceX = 46.2 + ox;      // the east fence line: west of it is the plaza map, east of it the forest
+    WORLD.fenceX = L.RAO_DONG;     // the east fence line (46.2 in the forest's own coordinates): west of it is the plaza map, east of it the forest
     WORLD.lake = Object.assign(F(102, -6), { r: 13 });
-    const bc = B.vat.find((v) => v.id === 'ben-cau'), hc = B.nuoc.find((n) => n.id === 'ho-cau'), hn = B.nuoc.find((n) => n.id === 'ho-ca');
-    WORLD.dock2 = { x: bc.diemDung.x, z: bc.diemDung.z, r: 1.8, room: 'trong-cay', pond: { x: hc.x, z: hc.z, r: hc.r } }; // Top1's dock in the Garden Room
-    WORLD.pond2 = { x: hn.x, z: hn.z, r: hn.r, room: 'trong-cay' };                             // Top1's fish pond (shows the same fish as the island tank)
-    WORLD.beds = B.vat.filter((v) => v.loai === 'luong').map((v) => ({ x: v.x, z: v.z }));       // Top1's 6 garden beds
+    WORLD.beds = [];   // the Garden Room (6 beds, fish pond, fishing dock, stall) was removed on 2026-11-15; the forest stands there now
     // v5: fishing chairs around the forest lake and along the winding stream (the forest dock is gone).
-    // A spot: where you sit (x, z, ry) and where the float lands (bx, bz). Top1's dock in the Garden Room is one more spot (you stand).
+    // A spot: where you sit (x, z, ry) and where the float lands (bx, bz).
     WORLD.stream = [[114.5, -2], [120, 4], [117, 10], [123, 15], [120, 21], [127, 26], [134, 30]].map(([x, z]) => { const q = F(x, z); return [q.x, q.z]; });
     WORLD.fishSpots = [0, 0.6, 1.2, 1.9, 2.6, 3.2].map((a) => {
       const K = WORLD.lake, x = K.x + Math.cos(a) * 14.8, z = K.z + Math.sin(a) * 14.8;
@@ -77,7 +74,6 @@
       const a = F(s.x, s.z), b = F(s.bx, s.bz);
       return { x: a.x, z: a.z, bx: b.x, bz: b.z, ry: Math.atan2(b.x - a.x, b.z - a.z), kind: 'stream', area: 'forest' };
     }));
-    WORLD.fishSpots.push({ x: WORLD.dock2.x, z: WORLD.dock2.z, bx: hc.x - 1.4, bz: hc.z, ry: Math.PI / 2, kind: 'dock', area: 'campus', room: 'trong-cay', stand: true });
     // v5: food & drink stands (a study buff: Xu x1.1 – x1.25 for a while). The plaza cart stands by the north wall.
     WORLD.foodStands = [
       Object.assign(F(94, 31.5), { id: 'cafe', name: 'Forest Café', area: 'forest', front: F(94, 28.4) }),
@@ -116,10 +112,9 @@
     };
 
     // --- v4's lobby things, placed on the Top1 map ---
-    const qc = B.vat.find((v) => v.id === 'quay-cua-hang'), qh = B.vat.find((v) => v.id === 'quay-hang');
+    const qc = B.vat.find((v) => v.id === 'quay-cua-hang');
     WORLD.shops = [                                                      // where you stand to open the shop
       { x: qc.x - 3, z: qc.z, room: 'cua-hang', name: 'Shop counter' },  // Shop & Wardrobe room
-      { x: qh.x, z: qh.z - 2.6, room: 'trong-cay', name: 'Garden stall' }, // Garden Room
     ];
     WORLD.shop = WORLD.shops[0];
     WORLD.bins = [{ x: -12.5, z: 14.5 }, { x: 12.5, z: -14.5 }, { x: 7, z: 15.2 }];
@@ -221,6 +216,7 @@
     this.lastNpcBuy = this.now(); this.lastNpcList = 0;
     this.merchant = null; this.nextMerchant = this.now() + 60000;
     this.npcLikes = {}; this.gidIndex = {}; this.boardCache = null; // social
+    this.friendReqs = []; // pending friend requests: { from, fromId, fromTok, name, to, until }
     if (!WORLD.ready) throw new Error('Call Room.setMap(map) with the Top1 map (logic.js) before creating a Room');
     // room plug-ins (campus-export): one per closed room; the cinema has the shared video queue
     this.onReading = opts.onReading || (() => {}); // the server adds each astrology reading to a CSV file (data/chiem-tinh.csv)
@@ -294,6 +290,7 @@
     });
     if (p.guest) this.system(id, 'You have the game open in another tab — this tab uses a temporary wallet and will not be saved.');
     if (p.pr) { p.pr.name = p.name; this.dailyUpkeep(p); }
+    if (p.token && !p.guest) { this.gidIndex[gidOf(p.token)] = p.token; this.sendFriends(p); this.friendsChanged(p, true); }
     this.send(id, this.musicState());
     for (const q of this.players.values()) if (q.id !== id) this.send(q.id, { type: 'join', player: this.publicPlayer(p) });
     this.broadcastCount();
@@ -311,6 +308,7 @@
     this.freeSeat(p, true);
     this.saveProfile(p);
     this.players.delete(id);
+    if (p.token && !p.guest) this.friendsChanged(p, false);
     if (![...this.players.values()].some((q) => !q.bot)) for (const k in this.plugins) this.plugins[k].reset(); // everyone left: rooms forget their state
     this.dirtyMoves.delete(id);
     // Their songs stay in the queue (nothing tied to accounts) — except we drop queued (not playing) songs to keep the
@@ -387,6 +385,10 @@
       }
       case 'active': break; // "still here" ping from the client (AFK check)
       case 'area': this.changeArea(p, String(msg.to || ''), String(msg.gid || '')); break;
+      case 'friendAdd': this.friendAdd(p, msg.id); break;
+      case 'friendAnswer': this.friendAnswer(p, String(msg.gid || ''), !!msg.ok); break;
+      case 'friendRemove': this.friendRemove(p, String(msg.gid || '')); break;
+      case 'friends': this.sendFriends(p); break;
       case 'like': this.like(p); break;
       case 'board': this.sendBoard(p); break;
       case 'quizAnswer': this.quizAnswer(p, msg); break;
@@ -573,6 +575,7 @@
   // =====================================================================
   // v2: profiles + economy
   // =====================================================================
+  const FRIEND_MAX = 50, FRIEND_REQ_MS = 120000; // friends per player; how long a friend request waits for an answer
   function dayKey(t) { const d = new Date(t); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function fixProfile(pr) {
     if (!pr || typeof pr !== 'object') pr = {};
@@ -596,7 +599,10 @@
     if (!g.potTypes || typeof g.potTypes !== 'object') g.potTypes = {};
     if (!g.furniture || typeof g.furniture !== 'object') g.furniture = {};
     if (pr.buff) out.buff = pr.buff;
-    if (!g.beds || typeof g.beds !== 'object') g.beds = {}; // Top1's 6 garden beds in the Garden Room
+    if (g.beds && typeof g.beds === 'object') for (const rec of Object.values(g.beds)) { // the Garden Room is gone: what grew in its beds comes back as seeds
+      if (rec && Catalog.plantInfo(rec.s)) out.inv['seed:' + rec.s] = (out.inv['seed:' + rec.s] || 0) + 1;
+    }
+    g.beds = {};
     if (!g.plots || typeof g.plots !== 'object') g.plots = {};
     if (!g.flowerPots || typeof g.flowerPots !== 'object') g.flowerPots = {};
     if (!g.trees || typeof g.trees !== 'object') g.trees = {};
@@ -607,6 +613,10 @@
     if (pr.name) out.name = pr.name;
     if (pr.likes) out.likes = pr.likes;
     if (pr.likesGiven) out.likesGiven = pr.likesGiven;
+    if (pr.friends && typeof pr.friends === 'object') { // friends: garden id -> { name }
+      out.friends = {};
+      for (const gid of Object.keys(pr.friends).slice(0, FRIEND_MAX)) if (/^g[a-z0-9]{1,12}$/.test(gid)) out.friends[gid] = { name: cleanText(pr.friends[gid] && pr.friends[gid].name, 16) || 'Classmate' };
+    }
     if (pr.upkeepDay) out.upkeepDay = pr.upkeepDay;
     if (pr.astroDay) out.astroDay = pr.astroDay;
     if (pr.match && typeof pr.match === 'object') out.match = pr.match; // Colour Match: stars per level and the level in progress
@@ -797,11 +807,90 @@
     const npc = NPC_GARDENS.find((n) => n.gid === gid);
     if (npc) return { name: npc.name + "'s garden", garden: npcGarden(npc.seed, now), likes: (this.npcLikes[gid] || 0), npc: true };
     for (const q of this.players.values()) if (q.token && !q.guest && gidOf(q.token) === gid && q.pr) return { name: q.name + "'s garden", garden: q.pr.garden, likes: q.pr.likes && q.pr.likes.week === wk ? q.pr.likes.n : 0, token: q.token, live: q };
-    const tok = this.gidIndex[gid];
+    const tok = this.tokenOf(gid);
     const pr = tok && this.store.load(tok);
     if (pr) { const f = fixProfile(pr); return { name: (f.name || 'a classmate') + "'s garden", garden: f.garden, likes: f.likes && f.likes.week === wk ? f.likes.n : 0, token: tok }; }
     return null;
   };
+  /** The saved-profile token behind a garden id (also after a server restart, when nobody has opened the leaderboard yet). */
+  Room.prototype.tokenOf = function (gid) {
+    if (!this.gidIndex[gid] && this.store.all) for (const [tok] of this.store.all()) if (!String(tok).startsWith('__')) this.gidIndex[gidOf(tok)] = tok;
+    return this.gidIndex[gid] || null;
+  };
+
+  // ---- friends: ask a player you meet, they accept, and you can visit each other's garden from the Friends list at any time ----
+  const friendGid = (p) => (p && p.token && !p.guest && p.pr ? gidOf(p.token) : null);
+  Room.prototype.playerByGid = function (gid) { for (const q of this.players.values()) if (friendGid(q) === gid) return q; return null; };
+  Room.prototype.sendFriends = function (p) {
+    const me = friendGid(p); if (!me) return;
+    const fr = p.pr.friends || {}, now = this.now();
+    const list = Object.keys(fr).map((gid) => {
+      const q = this.playerByGid(gid);
+      if (q && fr[gid].name !== q.name) { fr[gid].name = q.name; p.dirty = true; } // keep the name fresh
+      return { gid, name: fr[gid].name, online: !!q, id: q ? q.id : null };
+    }).sort((a, b) => (b.online ? 1 : 0) - (a.online ? 1 : 0) || a.name.localeCompare(b.name));
+    this.friendReqs = this.friendReqs.filter((r) => r.until > now);
+    this.send(p.id, { type: 'friends', list, requests: this.friendReqs.filter((r) => r.to === me).map((r) => ({ gid: r.from, name: r.name })) });
+  };
+  /** A player came online or left: their friends' lists change. */
+  Room.prototype.friendsChanged = function (p, online) {
+    const me = friendGid(p) || (p.token ? gidOf(p.token) : null); if (!me) return;
+    for (const q of this.players.values()) if (q.id !== p.id && q.pr && q.pr.friends && q.pr.friends[me]) {
+      if (online) this.system(q.id, '🟢 Your friend ' + p.name + ' is online.');
+      this.sendFriends(q);
+    }
+  };
+  Room.prototype.makeFriends = function (a, b) { // a, b: { gid, name, live (player) | tok (saved profile) }
+    const link = (x, y) => {
+      if (x.live) { const pr = x.live.pr; pr.friends = pr.friends || {}; pr.friends[y.gid] = { name: y.name }; x.live.dirty = true; this.sendFriends(x.live); }
+      else if (x.tok) { const pr = fixProfile(this.store.load(x.tok)); pr.friends = pr.friends || {}; pr.friends[y.gid] = { name: y.name }; this.store.save(x.tok, pr); }
+    };
+    link(a, b); link(b, a);
+  };
+  Room.prototype.friendAdd = function (p, targetId) {
+    const me = friendGid(p), t = this.now();
+    if (!me) { this.system(p.id, 'This tab uses a temporary wallet, so it cannot keep friends.'); return; }
+    const q = this.players.get(targetId), other = friendGid(q);
+    if (!q || q.id === p.id) return;
+    if (!other) { this.system(p.id, q.bot ? q.name + ' is a villager, not a player.' : q.name + ' is playing in a temporary tab and cannot be added.'); return; }
+    if (t - (p.lastFriend || 0) < 1500) return; p.lastFriend = t;
+    const mine = p.pr.friends || {};
+    if (mine[other]) { this.system(p.id, 'You and ' + q.name + ' are already friends.'); return; }
+    if (Object.keys(mine).length >= FRIEND_MAX) { this.system(p.id, 'Your friends list is full (' + FRIEND_MAX + ').'); return; }
+    if (Object.keys(q.pr.friends || {}).length >= FRIEND_MAX) { this.system(p.id, q.name + '\'s friends list is full.'); return; }
+    this.friendReqs = this.friendReqs.filter((r) => r.until > t && !(r.from === me && r.to === other));
+    const back = this.friendReqs.find((r) => r.from === other && r.to === me);
+    if (back) { // they had already asked you: that is a yes from both sides
+      this.friendReqs = this.friendReqs.filter((r) => r !== back);
+      this.makeFriends({ gid: me, name: p.name, live: p }, { gid: other, name: q.name, live: q });
+      for (const x of [p, q]) this.system(x.id, '🤝 ' + (x === p ? q.name : p.name) + ' and you are now friends. Visit their garden from the Friends list.');
+      return;
+    }
+    this.friendReqs.push({ from: me, fromId: p.id, fromTok: p.token, name: p.name, to: other, until: t + FRIEND_REQ_MS });
+    this.send(q.id, { type: 'friendRequest', gid: me, name: p.name });
+    this.sendFriends(q);
+    this.system(p.id, 'Friend request sent to ' + q.name + '.');
+  };
+  Room.prototype.friendAnswer = function (p, gid, ok) {
+    const me = friendGid(p), t = this.now(); if (!me) return;
+    const r = this.friendReqs.find((x) => x.from === gid && x.to === me && x.until > t);
+    this.friendReqs = this.friendReqs.filter((x) => x !== r && x.until > t);
+    if (!r) { this.sendFriends(p); return; }
+    const q = this.playerByGid(gid);
+    if (!ok) { this.sendFriends(p); if (q) this.system(q.id, p.name + ' did not accept the friend request.'); return; }
+    if (Object.keys(p.pr.friends || {}).length >= FRIEND_MAX) { this.system(p.id, 'Your friends list is full (' + FRIEND_MAX + ').'); this.sendFriends(p); return; }
+    this.makeFriends({ gid: me, name: p.name, live: p }, q ? { gid, name: q.name, live: q } : { gid, name: r.name, tok: r.fromTok });
+    this.system(p.id, '🤝 ' + r.name + ' and you are now friends. Visit their garden from the Friends list.');
+    if (q) this.system(q.id, '🤝 ' + p.name + ' accepted: you are now friends. Visit their garden from the Friends list.');
+  };
+  Room.prototype.friendRemove = function (p, gid) {
+    const me = friendGid(p); if (!me || !p.pr.friends || !p.pr.friends[gid]) return;
+    delete p.pr.friends[gid]; p.dirty = true; this.sendFriends(p);
+    const q = this.playerByGid(gid); // friendship is mutual: it ends on both sides
+    if (q) { if (q.pr.friends) delete q.pr.friends[me]; q.dirty = true; this.sendFriends(q); }
+    else { const tok = this.tokenOf(gid); const raw = tok && this.store.load(tok); if (raw) { const pr = fixProfile(raw); if (pr.friends) delete pr.friends[me]; this.store.save(tok, pr); } }
+  };
+
   Room.prototype.likedToday = function (p, gid) { const d = dayKey(this.now()); return !!(p.pr && p.pr.likesGiven && p.pr.likesGiven.day === d && p.pr.likesGiven.list.includes(gid)); };
   Room.prototype.like = function (p) {
     if (!p.pr || p.guest || !p.visiting) return;
@@ -902,7 +991,7 @@
     this.award(p, n * ECON.trashDrop, 'recycle', n + ' items');
   };
 
-  // ---- fishing (v5: from the fishing chairs around the forest lake / along the stream, and from Top1's dock in the Garden Room) ----
+  // ---- fishing (v5: from the fishing chairs around the forest lake / along the stream, the Garden Room dock is gone) ----
   function atFishSpot(p, i) {
     const s = WORLD.fishSpots[i | 0];
     return !!s && (s.area || 'forest') === p.area && (s.room || null) === (p.room || null) && Math.hypot(p.x - s.x, p.z - s.z) <= 2.8;
@@ -1150,15 +1239,11 @@
   // ---- private farm island (v5): crop fields, cloud-garden flower pots, fruit trees, round fish tank, animal pens, house ----
   Room.plantProgress = function (pl, now, where, potLvl) { return Catalog.progress(pl, where || 'plot', potLvl || 0, now); };
   Room.prototype.gardenAction = function (p, msg) {
-    const inRoom = p.area === 'campus' && p.room === 'trong-cay'; // Top1's Garden Room: 6 beds + the fish pond
-    if (!p.pr || !(p.area === 'garden' || inRoom)) return;
+    if (!p.pr || p.area !== 'garden') return;
     if (p.visiting) { this.system(p.id, 'You are visiting another garden — you can only look around and like it.'); return; }
     const pr = p.pr, g = pr.garden, C = Catalog, t = this.now();
     const where = msg.where === 'bed' ? 'bed' : msg.where === 'pot' ? 'pot' : msg.where === 'tree' ? 'tree' : 'plot';
-    if (inRoom) { // here only the beds and the pond work; everything else belongs to the island
-      if (msg.type === 'pondRelease' || msg.type === 'pondTake' || msg.type === 'pondFeed') { const pd = WORLD.pond2; if (Math.hypot(p.x - pd.x, p.z - pd.z) > pd.r + 3.5) return; }
-      else if (!((msg.type === 'plant' || msg.type === 'care' || msg.type === 'harvest') && where === 'bed')) return;
-    } else if (where === 'bed') return;
+    if (where === 'bed') return; // garden beds existed only in the Garden Room (removed)
     const coll = where === 'bed' ? g.beds : where === 'pot' ? g.flowerPots : where === 'tree' ? g.trees : g.plots;
     const keyOk = () => {
       const k = String(msg.id == null ? msg.plot : msg.id);
