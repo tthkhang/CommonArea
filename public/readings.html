@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All reading texts — Top 1 Server</title>
+<style>
+  body { margin: 0; background: #EFE3C2; color: #2B1F4D; font: 15px/1.5 Georgia, "Times New Roman", serif; }
+  header { position: sticky; top: 0; background: #2B1F4D; color: #FFF6DC; padding: 10px 18px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; z-index: 2; }
+  header b { font-size: 18px; } header input { font: inherit; padding: 5px 10px; border-radius: 8px; border: 0; min-width: 220px; }
+  header a { color: #FFE9A8; } header span { font-size: 13px; opacity: .85; }
+  main { max-width: 980px; margin: 18px auto; padding: 0 16px 60px; }
+  section { background: #FFF9EA; border: 2px solid #B8892B; border-radius: 8px; padding: 10px 18px; margin: 14px 0; }
+  h2 { margin: 6px 0; font-size: 22px; } h2 small { font-weight: normal; font-size: 13px; color: #7A6A4F; }
+  .row { display: grid; grid-template-columns: 250px 1fr 46px; gap: 10px; padding: 5px 0; border-top: 1px dashed #D9C48C; }
+  .row code { font: 12.5px/1.4 ui-monospace, Menlo, monospace; color: #5A2FE0; word-break: break-word; }
+  .row i { font-style: normal; font-size: 12px; color: #7A6A4F; text-align: right; }
+  .row.hide { display: none; }
+  @media (max-width: 700px) { .row { grid-template-columns: 1fr; gap: 2px; } .row i { text-align: left; } }
+</style>
+</head>
+<body>
+<header><b>All reading texts of the Astrology Room</b><input id="q" type="search" placeholder="Filter: a word, a number, a star, a sign…"><span id="count"></span><a href="./">← back to the game</a></header>
+<main id="out"><p>Loading…</p></main>
+<script type="module">
+// One page with every passage the Astrology Room can show, for whoever proof-reads them (the spec asks for
+// "a page to see all of it"). The texts live in js/text/*.js; edit them there. `node tests/text/all.check.mjs` checks the lengths.
+const PACKS = [['num-lifepath', 'Numerology · Life Path (the 7-part text)'], ['num-core', 'Numerology · Expression, Soul, Personality, Birthday, Attitude, Maturity'],
+  ['num-cycles', 'Numerology · smaller numbers, charts, arrows, pinnacles, cycles, year / month / day'], ['tuvi-stars', 'Tử Vi · the 14 main stars in the 12 palaces'],
+  ['tuvi-extra', 'Tử Vi · helper stars, palaces, decades, years, Thân, elements'], ['west-big3', 'Star Chart · Sun, Moon and rising sign'],
+  ['west-signs', 'Star Chart · planets in the signs'], ['west-houses', 'Star Chart · planets in the houses, aspects, balance']];
+const words = (s) => s.trim().split(/\s+/).filter(Boolean).length;
+const out = document.getElementById('out'); out.textContent = '';
+let passages = 0; let total = 0;
+for (const [file, title] of PACKS) {
+  const mod = await import(`./js/text/${file}.js`);
+  const sec = document.createElement('section'); let n = 0; let w = 0;
+  const walk = (v, path) => {
+    if (typeof v === 'string') {
+      const row = document.createElement('div'); row.className = 'row';
+      const k = document.createElement('code'); k.textContent = path; const t = document.createElement('div'); t.textContent = v; const c = document.createElement('i'); c.textContent = words(v) + ' w';
+      row.append(k, t, c); sec.append(row); n++; w += words(v);
+    } else if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`));
+    else if (v && typeof v === 'object') for (const key of Object.keys(v)) walk(v[key], path ? `${path} › ${key}` : key);
+  };
+  const h = document.createElement('h2'); sec.append(h);
+  for (const name of Object.keys(mod)) walk(mod[name], name);
+  h.innerHTML = `${title} <small>js/text/${file}.js · ${n} passages · ${w.toLocaleString('en')} words</small>`;
+  out.append(sec); passages += n; total += w;
+}
+const count = document.getElementById('count'); const all = `${passages.toLocaleString('en')} passages · ${total.toLocaleString('en')} words`; count.textContent = all;
+document.getElementById('q').addEventListener('input', (e) => {
+  const q = e.target.value.trim().toLowerCase(); let shown = 0;
+  for (const row of document.querySelectorAll('.row')) { const hit = !q || row.textContent.toLowerCase().includes(q); row.classList.toggle('hide', !hit); if (hit) shown++; }
+  count.textContent = q ? `${shown} of ${passages} passages match` : all;
+});
+</script>
+</body>
+</html>

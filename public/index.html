@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Top 1 Server</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+  :root {
+    --bg: #F4EEFF; --surface: #FFF9EE; --primary: #7A4DFF; --ink: #2B1F4D; --accent: #FFC43D;
+    --good: #35C27A; --bad: #FF5A5F;
+    --primary-de: #5A2FE0; --accent-de: #D99A12;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { font: 500 16px/1.4 "Nunito", system-ui, sans-serif; color: var(--ink); background: var(--bg); touch-action: none; user-select: none; }
+  [hidden] { display: none !important; }
+  h1, h2, h3, .baloo { font-family: "Baloo 2", "Nunito", sans-serif; }
+
+  /* nút kiểu Play Together: to, bo tròn, có đế */
+  .nut { font: 800 18px/1 "Baloo 2", sans-serif; color: #fff; background: var(--primary); border: 3px solid var(--ink);
+         border-radius: 18px; padding: 12px 20px; min-height: 52px; box-shadow: 0 5px 0 var(--ink); cursor: pointer;
+         transition: transform .15s ease-out, box-shadow .15s ease-out; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .nut:active { transform: translateY(4px) scale(.97); box-shadow: 0 1px 0 var(--ink); }
+  .nut.vang { background: var(--accent); color: var(--ink); }
+  .nut[disabled] { background: #CFC6E6; color: #6E6490; cursor: default; }
+  .tron { width: 52px; height: 52px; padding: 0; border-radius: 50%; background: var(--surface); color: var(--ink); }
+  .ico { width: 24px; height: 24px; display: inline-block; background: currentColor;
+         -webkit-mask: var(--m) center / contain no-repeat; mask: var(--m) center / contain no-repeat; }
+
+  /* ---------------- màn vào game */
+  #man-vao-game { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px;
+    background: radial-gradient(120% 80% at 50% 0%, #FFFFFF 0%, var(--bg) 45%, #D9CBFF 100%); }
+  #man-vao-game .the { width: 100%; max-width: 860px; display: grid; gap: 12px; align-items: center; }
+  .logo { text-align: center; margin: 0; }
+  .logo b { display: block; font: 800 44px/1 "Baloo 2", sans-serif; color: var(--primary);
+            -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink); letter-spacing: .5px; }
+  .logo span { display: block; margin-top: 6px; font-weight: 700; font-size: 15px; color: #5E5380; }
+  #xem-truoc { width: 100%; height: 34vh; max-height: 300px; min-height: 200px; display: block; }
+  .bang-chon { background: var(--surface); border: 3px solid var(--ink); border-radius: 24px; padding: 14px; box-shadow: 0 6px 0 var(--ink); display: grid; gap: 10px; }
+  .bang-chon label { font: 800 15px "Baloo 2", sans-serif; }
+  #ten { width: 100%; font: 700 18px "Nunito", sans-serif; color: var(--ink); background: #fff; border: 3px solid var(--ink);
+         border-radius: 14px; padding: 10px 14px; min-height: 48px; outline: none; user-select: text; }
+  #ten:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(122,77,255,.25); }
+  #loi-ten { color: var(--bad); font-weight: 800; font-size: 14px; margin: -4px 0 0; }
+  #loi-ten.lac { animation: lac .35s ease-out; }
+  #bang-mau { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .o-mau { aspect-ratio: 1; min-width: 44px; min-height: 44px; border-radius: 50%; border: 3px solid var(--ink); background: var(--c);
+           box-shadow: 0 3px 0 var(--ink), inset 0 -6px 0 rgba(0,0,0,.15); cursor: pointer; position: relative; padding: 0;
+           transition: transform .15s ease-out; }
+  .o-mau[aria-pressed="true"] { transform: scale(1.12); box-shadow: 0 0 0 4px var(--primary), 0 3px 0 var(--ink); }
+  .o-mau[aria-pressed="true"]::after { content: "✓"; position: absolute; inset: 0; display: grid; place-items: center; color: #fff;
+           font: 800 20px "Baloo 2"; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+  #nut-vao { width: 100%; font-size: 21px; min-height: 58px; }
+  @media (min-width: 768px) {
+    #man-vao-game .the { grid-template-columns: 1fr 1fr; grid-template-areas: "logo logo" "xem bang"; }
+    .logo { grid-area: logo; } #xem-truoc { grid-area: xem; height: 380px; max-height: none; } .bang-chon { grid-area: bang; }
+  }
+
+  /* ---------------- màn chơi */
+  #canh { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .hud { position: fixed; z-index: 5; }
+  #ten-phong { top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px;
+     background: var(--surface); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 16px 6px 8px; box-shadow: 0 4px 0 var(--ink);
+     font: 800 17px/1 "Baloo 2", sans-serif; white-space: nowrap; max-width: calc(100vw - 150px); pointer-events: none; }
+  #ten-phong img { width: 28px; height: 28px; }
+  #ten-phong.moi { animation: truotXuong .45s cubic-bezier(.2,1.4,.4,1); }
+  .cot-phai { top: max(12px, env(safe-area-inset-top)); right: 12px; display: grid; gap: 10px; }
+  .cot-trai { top: max(12px, env(safe-area-inset-top)); left: 12px; display: grid; gap: 10px; }
+  .chip { background: var(--surface); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink);
+          padding: 6px 12px 6px 6px; display: flex; align-items: center; gap: 6px; font: 800 15px "Baloo 2"; pointer-events: none; }
+  .chip i { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--ink); background: var(--c); display: inline-block; }
+  #joystick { left: 20px; bottom: max(24px, env(safe-area-inset-bottom)); width: 128px; height: 128px; border-radius: 50%;
+     background: rgba(255,249,238,.55); border: 3px solid var(--ink); box-shadow: 0 4px 0 rgba(43,31,77,.6); touch-action: none; }
+  #joystick .nut-gat { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%;
+     background: var(--primary); border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink); pointer-events: none; }
+  #nut-dung { left: 50%; bottom: max(28px, env(safe-area-inset-bottom)); transform: translateX(-50%); }
+  #nut-dung:active { transform: translateX(-50%) translateY(4px) scale(.97); }
+  #bang-thong-tin { left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); margin: 0 auto; max-width: 460px;
+     background: var(--surface); border: 3px solid var(--ink); border-radius: 24px; box-shadow: 0 6px 0 var(--ink); padding: 16px 16px 14px;
+     animation: bung .3s cubic-bezier(.2,1.5,.4,1); }
+  #bang-thong-tin h2 { margin: 0 52px 2px 0; font-size: 24px; line-height: 1.1; }
+  #bang-thong-tin p { margin: 4px 0 12px; font-size: 15px; color: #4A3F6E; }
+  #bang-thong-tin .the-sap-co { display: inline-block; background: var(--accent); border: 2px solid var(--ink); border-radius: 999px;
+     padding: 2px 10px; font: 800 13px "Baloo 2"; margin-bottom: 4px; }
+  #bang-thong-tin .the-sap-co.lac { animation: lac .4s ease-out; }
+  #dong-bang { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; min-height: 44px; box-shadow: 0 3px 0 var(--ink); }
+  #nut-hanh-dong { width: 100%; }
+  #ban-do { inset: 0; background: rgba(28,20,58,.55); display: grid; place-items: center; padding: 16px; z-index: 8; }
+  #ban-do .the { background: var(--surface); border: 3px solid var(--ink); border-radius: 26px; box-shadow: 0 6px 0 var(--ink);
+     padding: 16px; width: 100%; max-width: 440px; animation: bung .3s cubic-bezier(.2,1.5,.4,1); position: relative; }
+  #ban-do h2 { margin: 0 0 10px; font-size: 26px; }
+  #ban-do .luoi { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  #ban-do .khu { background: #fff; color: var(--ink); justify-content: flex-start; font-size: 15px; line-height: 1.15; padding: 8px 10px; min-height: 58px; text-align: left; }
+  #ban-do .khu img { width: 30px; height: 30px; flex: none; }
+  #ban-do .khu.dang-o { background: #E9E0FF; border-color: var(--primary); }
+  #ban-do .khu small { display: block; font: 700 12px "Nunito"; color: #6E6490; }
+  #dong-ban-do { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; min-height: 44px; box-shadow: 0 3px 0 var(--ink); }
+  #man-mo { inset: 0; background: #1B163F; z-index: 9; pointer-events: none; opacity: 0; transition: opacity .25s ease-out; }
+  #man-mo.hien { opacity: 1; }
+  #thong-bao { left: 50%; top: 80px; transform: translateX(-50%); background: var(--ink); color: #fff; border-radius: 16px; padding: 10px 16px;
+     font: 800 16px "Baloo 2"; box-shadow: 0 4px 0 rgba(0,0,0,.25); pointer-events: none; animation: bung .25s ease-out; z-index: 9; white-space: nowrap; }
+  #bong-chu { background: #fff; border: 3px solid var(--ink); border-radius: 18px; padding: 8px 12px; font: 700 14px/1.25 "Nunito";
+     max-width: 220px; box-shadow: 0 4px 0 var(--ink); pointer-events: none; transform: translate(-50%, -100%); z-index: 4; animation: bung .3s ease-out; }
+  #bong-chu::after { content: ""; position: absolute; left: 50%; bottom: -12px; margin-left: -9px; border: 9px solid transparent; border-top-color: var(--ink); }
+  #bong-chu b { font-family: "Baloo 2"; color: var(--primary); }
+  .nhan-khu { left: 0; top: 0; z-index: 3; pointer-events: none; white-space: nowrap; background: var(--ink); color: #fff;
+     border: 3px solid var(--accent); border-radius: 999px; padding: 5px 14px; font: 800 14px/1.2 "Baloo 2", sans-serif;
+     box-shadow: 0 3px 0 rgba(43,31,77,.35); will-change: transform; }
+  .nhan-khu span { color: var(--accent); margin-left: 4px; }
+  @media (min-width: 768px) { .nhan-khu { font-size: 20px; padding: 7px 18px; } }
+  .bay-len { position: fixed; z-index: 7; font: 800 18px "Baloo 2"; color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill;
+     pointer-events: none; animation: bayLen .9s ease-out forwards; transform: translate(-50%, -50%); }
+  #loi-webgl { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; background: var(--bg); z-index: 20; text-align: center; }
+  #loi-webgl .the { background: var(--surface); border: 3px solid var(--ink); border-radius: 24px; padding: 20px; max-width: 420px; box-shadow: 0 6px 0 var(--ink); }
+  #loi-webgl h2 { margin: 0 0 6px; }
+
+  #huong-dan { left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(520px, calc(100vw - 32px));
+     background: var(--surface); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 6px 0 var(--ink); padding: 14px 16px; z-index: 7; }
+  #huong-dan > b { font: 800 20px "Baloo 2"; color: var(--primary); }
+  #huong-dan p { margin: 6px 0; font-size: 15px; }
+  #huong-dan .nut { width: 100%; margin-top: 6px; }
+  @media (max-width: 767px) { #huong-dan { bottom: 170px; } }
+  @keyframes bung { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes truotXuong { from { transform: translate(-50%, -140%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+  @keyframes lac { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-4px); } }
+  @keyframes bayLen { from { opacity: 1; transform: translate(-50%, -50%); } to { opacity: 0; transform: translate(-50%, -160%); } }
+  @keyframes nay { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+</style>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <!-- ======================= entry screen (Top1 layout + campus-export customizer) ======================= -->
+  <section id="man-vao-game">
+    <div class="the">
+      <h1 class="logo"><b>Top 1 Server</b><span>The shared plaza for the whole crew ✦</span></h1>
+      <canvas id="xem-truoc" aria-label="Your character"></canvas>
+      <div class="bang-chon">
+        <label for="ten">Character name</label>
+        <input id="ten" maxlength="16" autocomplete="off" placeholder="For example: Le Quan">
+        <p id="loi-ten" hidden></p>
+        <label>Outfit colour</label>
+        <div id="bang-mau" role="group" aria-label="Outfit colour"></div>
+        <button id="nut-tuy-chinh" class="nut" type="button">🎨 Customize character</button>
+        <button id="nut-vao" class="nut vang" type="button">Enter the plaza ▶</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= game screen ======================= -->
+  <section id="man-choi" hidden>
+    <div id="lop-video"></div>
+    <canvas id="canh" tabindex="0"></canvas>
+    <div id="labels"></div>
+    <div id="tam-ngam" hidden></div>
+
+    <div id="ten-phong" class="hud"><img alt="" src="./assets/icon-chung.svg"><span>Common Plaza</span></div>
+    <div class="hud cot-trai">
+      <div class="chip" id="chip-ten"><i></i><span></span></div>
+      <div class="chip" id="chip-nguoi" title="Players online"><span></span></div>
+      <aside id="side-left"></aside>
+    </div>
+    <div class="hud cot-phai">
+      <button id="nut-ban-do" class="nut tron" aria-label="Map" title="Map: jump to any zone (M)"><span class="ico" style="--m:url(./assets/ui-map.svg)"></span></button>
+      <button id="nut-toan-canh" class="nut tron" aria-label="Overview" title="Overview of the whole map"><span class="ico" style="--m:url(./assets/ui-scan-eye.svg)"></span></button>
+      <button id="nut-pov" class="nut tron chu" aria-label="Point of view" title="Change point of view: diorama, third person, top-down, first person (C)">📷</button>
+      <button id="nut-tuy-chinh-2" class="nut tron chu" aria-label="Customize" title="Customize your character">🎨</button>
+      <button id="nut-emote" class="nut tron chu" aria-label="Emotes" title="Emote wheel (G)">😀</button>
+      <button id="nut-nhac" class="nut tron" aria-label="Music" title="Shared music panel"><span class="ico" style="--m:url(./assets/ui-volume-2.svg)"></span></button>
+      <button id="nut-chat" class="nut tron" aria-label="Chat" title="Show or hide the chat (Enter to type)"><span class="ico" style="--m:url(./assets/ui-message-circle.svg)"></span></button>
+      <button id="nut-admin" class="nut tron chu" aria-label="Admin" title="Admin login">🛡</button>
+    </div>
+
+    <!-- campus-game-v4 HUD (Xu bar, shop, bag, garden panels...) is built into this layer by features.js -->
+    <div id="hud"></div>
+    <div id="hint" class="hud" hidden></div>
+
+    <div id="joystick" class="hud" hidden><span class="nut-gat"></span></div>
+    <button id="nut-dung" class="hud nut" hidden><span class="ico" style="--m:url(./assets/ui-arrow-up-from-line.svg)"></span>Stand up</button>
+    <div id="bong-chu" class="hud" hidden></div>
+    <div id="bang-thong-tin" class="hud" hidden>
+      <button id="dong-bang" class="nut tron" aria-label="Close" title="Close"><span class="ico" style="--m:url(./assets/ui-x.svg)"></span></button>
+      <span class="the-sap-co" hidden>Coming soon</span>
+      <h2 id="bang-tieu-de"></h2>
+      <p id="bang-mo-ta"></p>
+      <button id="nut-hanh-dong" class="nut" disabled hidden></button>
+    </div>
+    <div id="ban-do" class="hud" hidden>
+      <div class="the">
+        <button id="dong-ban-do" class="nut tron" aria-label="Close the map"><span class="ico" style="--m:url(./assets/ui-x.svg)"></span></button>
+        <h2>Map</h2>
+        <div class="luoi"></div>
+      </div>
+    </div>
+    <div id="huong-dan" class="hud" hidden>
+      <b>Welcome to Top 1 Server!</b>
+      <p class="cach-di"></p>
+      <p><b>E</b> uses what is next to you (seats, shop, garden, fishing…) · <b>Space</b> jumps · <b>C</b> changes the point of view · <b>G</b> emotes · <b>B</b> bag · <b>Enter</b> chats · the map button jumps to any zone.</p>
+      <button id="da-hieu" class="nut">Got it</button>
+    </div>
+    <div id="thong-bao" class="hud" hidden></div>
+    <div id="man-mo" class="hud"></div>
+
+    <!-- chat, bottom-left -->
+    <section id="chat" class="hud" hidden>
+      <div id="chat-log" class="log"></div>
+      <input id="chatInput" type="text" maxlength="200" placeholder="Press Enter to chat with everyone" autocomplete="off">
+    </section>
+    <!-- right-hand column: music, cinema queue, table chat (closable panels) -->
+    <aside id="side" class="hud"></aside>
+
+    <div id="playerCard" class="hud the-nho hidden"><b class="ten"></b><div class="btns"><button class="nut nho" data-act="report">Report</button><button class="nut nho" data-act="block">Block</button><button class="nut nho xam" data-act="close">Close</button></div></div>
+    <div id="zoneCard" class="hidden"></div>
+    <div id="emote-wheel" hidden></div>
+    <div id="toasts"></div>
+    <div id="lop-phu" class="hud" hidden></div>
+  </section>
+
+  <div id="customize"></div>
+  <div id="audio-host"></div>
+
+  <div id="loi-webgl" hidden><div class="the"><h2>This device cannot run 3D yet</h2>
+    <p>WebGL is switched off in your browser. Turn on <b>“hardware acceleration”</b> in the browser settings (Chrome: Settings → System), then reload the page.</p></div></div>
+
+  <!-- shared rules (campus-game-v4 + campus-export room plug-ins): the same files run on the Node server -->
+  <script src="./shared/catalog.js"></script>
+  <script src="./shared/quiz.js"></script>
+  <script src="./shared/games.js"></script>
+  <script src="./shared/roomplugins.js"></script>
+  <script src="./shared/room.js"></script>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

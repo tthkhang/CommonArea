@@ -1,0 +1,12 @@
+{
+  "name": "top1-server-combined-game",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Top 1 Server: a browser 3D campus game (plaza, rooms, farm, forest, Game Room, Astrology Room). No dependencies.",
+  "scripts": {
+    "start": "node server.mjs",
+    "solo": "python3 serve.py",
+    "test": "node tests/rules.test.mjs && node tests/games.test.mjs && node tests/match.test.mjs && node tests/astro.test.mjs && node tests/reading.test.mjs && node tests/text/all.check.mjs && node --test tests/F*.test.js"
+  },
+  "engines": { "node": ">=18" }
+}

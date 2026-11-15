@@ -1,0 +1,22 @@
+# Render blueprint: one web service that runs the multiplayer server (see README.md, "Publish online").
+# Free plan: the service sleeps after 15 minutes without visitors and saved progress is wiped when it sleeps or restarts.
+# To keep progress: change plan to "starter" and uncomment the disk below (both cost money; the address stays the same).
+services:
+  - type: web
+    name: top1-server
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.mjs
+    healthCheckPath: /
+    envVars:
+      - key: ADMIN_PASSWORD
+        generateValue: true      # Render makes a random one; read it in the dashboard under Environment
+      - key: NODE_VERSION
+        value: 22
+      # - key: DATA_DIR
+      #   value: /var/data
+    # disk:
+    #   name: top1-data
+    #   mountPath: /var/data
+    #   sizeGB: 1

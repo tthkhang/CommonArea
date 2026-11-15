@@ -1,0 +1,4 @@
+# saved player profiles and the astrology readings file: personal data, never publish
+data/
+.DS_Store
+node_modules/
