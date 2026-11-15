@@ -1,6 +1,6 @@
-# Common Area
+# Top 1 Server
 
-**Common Area is a 3D online plaza where a class or a group of friends study, play and hang out together.** You open a link, pick a character and walk into a shared space. Sitting at a table with others earns Xu for focused study time, and each 25-minute round ends with a short quiz. Xu pays for a private garden island with crops, animals and a house you decorate. Around the plaza are a cinema with a shared video queue, a game room (Ludo, Colour Cards, Werewolf, Colour Match), an astrology room and a quiet forest for fishing. Players add each other as friends and visit each other's gardens. It runs in any browser and as an Android app.
+**Top 1 Server is a 3D online plaza where a class or a group of friends study, play and hang out together.** You open a link, pick a character and walk into a shared space. Sitting at a table with others earns Xu for focused study time, and each 25-minute round ends with a short quiz. Xu pays for a private garden island with crops, animals and a house you decorate. Around the plaza are a cinema with a shared video queue, a game room (Ludo, Colour Cards, Werewolf, Colour Match), an astrology room and a quiet forest for fishing. Players add each other as friends and visit each other's gardens. It runs in any browser and as an Android app.
 
 | | |
 |---|---|
