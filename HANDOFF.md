@@ -76,7 +76,7 @@ Smaller choices and the reasons are in `docs/DEVELOPER.md` → "Decisions".
 - **Werewolf computer players** exist only for solo practice and play simply (they follow accusations and the leading vote).
 - **Bad-word filter** is a short list for the game tables only; the plaza chat is unfiltered. No kick / mute tools.
 - **Xu table from the PO** (spec, round 6) has not arrived: a win pays the old 15 Xu.
-- **Readings** were written by the AI and not proof-read by a person; the Tử Vi chart was not compared with a professional program.
+- **Readings** were written with the AI and proof-read by Nhật; the Tử Vi chart was not compared with a professional program.
 - Not tried: a real phone (only an emulated 375 px screen), market trades between real players, many players at once.
 - Garden decorations are placed in front of the character, not dragged.
 

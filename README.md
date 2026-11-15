@@ -110,7 +110,7 @@ Each team member owned one part of the game (see [Team](#team)) and first built 
 
 - **Claude cannot see quality the way a player does.** The grainy graphics and the striped grass in the garden were found by a team member looking at the screen, not by Claude's test pass. Visual polish still needs human eyes.
 - **Automated play is not real play.** Shared tables were tested with scripted players, never with a group of real people on different devices. Werewolf in particular still needs a real evening with six or more players.
-- **Content written by AI is unreviewed content.** The 1,452 astrology passages were written by Claude and have not been proof-read by a person; the Tử Vi chart was not compared with a professional program.
+- **Content written by AI needs a human editor.** Claude wrote the 1,452 astrology passages quickly, but they only became ours after a person (Nhật) read through them. One check is still open: the Tử Vi chart has not been compared with a professional program.
 - **Environment surprises cost time.** The preview browser slowed to a crawl when hidden, so checks had to be done through page data instead of screenshots. The Android build failed twice before it worked (a folder name with a space, a signing-password detail). A brand-new emulator closed the app once for reasons that had nothing to do with our code.
 - **Some steps are ours by nature.** Signing in to GitHub and Render, choosing names, deciding what to cut, and every "publish" needed a person. Claude asked for approval before downloads and before anything that changed the live game.
 - **Long sessions lose detail.** Work that ran over many hours had to be summarised, so anything not written into the notes or `HANDOFF.md` was at risk of being forgotten.
