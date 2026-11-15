@@ -85,7 +85,7 @@ More detail (controls, what each area does, file map, design decisions, what was
 
 ## Our AI-native workflow
 
-Each team member first built one piece of the game as a separate project (the 3D plaza and map; the character customizer and room system; the Xu economy, farm and forest; the written spec for the Astrology and Game rooms). The product in this repository was then assembled, extended, tested and published with **Claude Code**, working in conversation with a team member who is not a programmer.
+Each team member owned one part of the game (see [Team](#team)) and first built it as a separate project. The product in this repository was then assembled, extended, tested and published with **Claude Code**, working in conversation with the team in plain language.
 
 ### How we used Claude
 
@@ -121,12 +121,102 @@ Each team member first built one piece of the game as a separate project (the 3D
 
 ## Team
 
-| Member | Role | Contributions |
+Common Area was built by a team of five. Each member owned one part of the game from design to a working build, and supported one or two other parts, so the work was split roughly evenly (about 20% each).
+
+| Member | Role | Owns |
 |---|---|---|
-| Khang | [role] | Character customizer, emotes and the closed-room system (the `campus-export` project). Led the merge into one game with Claude Code, testing, publishing, the Android app and the tracking. |
-| [name] | [role] | The 3D plaza, map, camera and interface look (the `Top1Server` project). |
-| [name] | [role] | Xu economy, shop, farm island, fishing and the Quiet Forest (the `campus-game` v4 and v5 projects). |
-| [name] | [role] | The detailed spec for the Astrology Room and the Game Room. |
+| **Vũ Thị Hoàng Ngân** | Art Director & Environment Designer | Visual style, the 3D plaza background, interface look |
+| **Hoàng Lê Minh Nhật** | Tech Lead & Astrology Content Lead | Multiplayer server, shared rules, tests, publishing; the reading content for numerology, Tử Vi and the birth chart |
+| **Tôn Thất Hân Khang** | Product Lead, Game Designer & Integrator | Game rules and game design, Cinema & Music Corner, Shop & Wardrobe; merging everything into one game, the Android app, tracking |
+| **Nguyễn Hà Phương** | Feature Developer: Astrology & Game Room | Astrology Room and Game Room (graphics, maths and functions) |
+| **Nguyễn Mạnh Huy** | Feature Developer: Garden, Forest & Characters | Character art, private garden island, Quiet Forest, Xu economy |
+
+### Vũ Thị Hoàng Ngân: Art Director & Environment Designer
+- Set the visual direction: a bright daytime diorama in the spirit of cosy social games, with a Greek touch. The style guide fixes the colours, the two fonts and the feedback effects.
+- Designed the 3D plaza background: grass, sand paths, white fences, round trees, marble columns, triangular roofs, statues and amphorae around the plaza and the room gates.
+- Designed the lighting of each area, for example the bright plaza, the purple night of the Astrology Room and the dark Cinema.
+- Designed the interface look:
+  - Floating area labels with the number of people.
+  - The map, panels and buttons.
+  - The entry screen.
+  - The choice of licensed icon sets.
+- Reviewed the game by eye at desktop and phone sizes. This review caught problems the automated tests missed, such as grainy graphics and striped grass in the garden.
+- *Supports:* the look of the Astrology Room, the Game Room and the garden.
+
+### Hoàng Lê Minh Nhật: Tech Lead & Astrology Content Lead
+- Built the multiplayer server (`server.mjs`, Node.js, no dependencies).
+- Built the shared rulebook in `public/shared/`. The same rules run on the server and in the browser, which also gives a no-install solo mode.
+- Set up the automated checks: more than 500 checks, plus scripted players that join the real server to test shared tables and friend requests.
+- Set up publishing with the Render blueprint, so every push to `main` redeploys the live site.
+- Led the **reading content of the Astrology Room** in its three fields:
+  - **Numerology:** life path, soul, mission, personality and maturity numbers; the birth and name charts with their arrows; karmic lessons; peaks and challenges; the personal year and its 12 months.
+  - **Tử Vi:** the 12 palaces, the 14 main stars in each palace, supporting stars, the 10-year cycles and the current year.
+  - **Birth chart:** the Sun, Moon and Ascendant; each planet by sign and by house; the strongest aspects; the element and modality balance.
+  - In total **1,452 passages**, written with Claude in one warm, practical tone. Each reading is assembled from the passages that match the player's own numbers, stars and planets, plus a summary section.
+- *Supports:* Phương on the readings page and Khang on integration.
+
+### Tôn Thất Hân Khang: Product Lead, Game Designer & Integrator
+- Wrote the **game rules** for all four table games (Ludo, Colour Cards, Werewolf, Colour Match). Designed the shared seven-part rule book (goal, setup, one turn, special cards or roles, winning, example, tips) with pictures, readable before and during a game.
+- **Game design** of the four games:
+  - **Werewolf:** the role table for 6–10 players (Werewolves, Seer, Guard, Witch, Villagers), the night order and timers, the day of discussion, vote and last words, ghost chat, and the rule for players who leave.
+  - **Colour Cards:** the 108-card deck, the action cards, the "One card!" call and its penalty, no stacking of +2 / +4.
+  - **Ludo:** horses enter on a 6 or a 1, a 6 gives an extra roll, capturing, blocking, exact rolls into home.
+  - **Colour Match:** the 8×8 board, special gems and combos, 30 levels with four goal types, star thresholds.
+  - **Shared table flow:** host, computer players for practice, the 20-second turn clock, spectators, table chat.
+- Designed the **Cinema & Music Corner**: a shared YouTube queue with limits per person, synced playback for everyone in the room.
+- Designed the **Shop & Wardrobe**: the shop counter, and the mirror that opens the character customizer and outfits.
+- **Merged the team's separate projects and the written spec into one game** with Claude Code. Settled every conflict between them (server technology, which areas to keep, closed rooms, interface language) and recorded the decisions in `HANDOFF.md`.
+- Built the **Android app**: a WebView app with an offline fallback, its build script, and tests on an emulator.
+- Built the **tracking**:
+  - The tracking plan in [TRACKING.md](TRACKING.md): the events the game records, what each one measures and why it matters.
+  - The anonymous event log, the stats page, and a test that fails if the plan and the code disagree.
+- *Supports:* Phương by turning the game design into test cases for the Game Room.
+
+### Nguyễn Hà Phương: Feature Developer, Astrology & Game Room
+- Built the **Astrology Room**:
+  - The night temple with a rotating zodiac ring, candles and a crystal ball.
+  - One birth form that gives three readings: numerology, a western birth chart and Tử Vi.
+  - The readings page.
+- Wrote the astrology maths: numerology numbers and charts, planet positions, the ascendant and houses, the lunar calendar and the Tử Vi chart. Checked them against published values.
+- Wrote the detailed spec for the Astrology Room and the Game Room, including the sections and length of each reading.
+- Built the **Game Room**:
+  - Four tables with their own props.
+  - The game screens for Ludo, Colour Cards and Werewolf.
+  - Colour Match for one player.
+  - The game graphics: cards, board, dice, gems, role cards.
+- *Supports:* Khang with the rule-book pictures and Nhật with the structure of the readings.
+
+### Nguyễn Mạnh Huy: Feature Developer, Garden, Forest & Characters
+- Designed the **character art**:
+  - The chibi body and quick outfit colours.
+  - Walk, idle and sit animations.
+  - Emotes that match the world's outline style.
+- Built the **private garden island**: fields, orchard, fish tank, cloud flower gardens, pens for chickens, pigs and cows, and a two-storey house to furnish. Plants grow in real time.
+- Built the **Quiet Forest**: fishing chairs, playground, café, local chat and the +25% study Xu bonus.
+- Built the **Xu economy**: study rewards, the shop and selling animal products.
+- Built **friends**: friend requests, the Friends panel, and visiting a friend's garden.
+- *Supports:* Ngân with the look of the characters and the garden, and Khang with the Xu events in the tracking plan.
+
+### Contribution matrix
+
+● = owner · ○ = support
+
+| Area | Ngân | Nhật | Khang | Phương | Huy |
+|---|:-:|:-:|:-:|:-:|:-:|
+| Visual style and plaza background | ● | | | ○ | ○ |
+| Interface look | ● | ○ | | | |
+| Characters and emotes | ○ | | | | ● |
+| Multiplayer server, shared rules, tests, publishing | | ● | ○ | | |
+| Merging into one game | | ○ | ● | | |
+| Android app | | | ● | | |
+| Tracking plan and event log | | | ● | | ○ |
+| Game rules (4 games) | | | ● | ○ | |
+| Game design and balance | | ○ | ● | ○ | |
+| Astrology Room (build and maths) | ○ | | | ● | |
+| Astrology reading content (3 fields) | | ● | | ○ | |
+| Game Room build and graphics | | ○ | ○ | ● | |
+| Cinema & Music Corner, Shop & Wardrobe | ○ | | ● | | |
+| Garden island, Quiet Forest, Xu, friends | ○ | | | | ● |
 
 ## Repository map
 
