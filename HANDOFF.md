@@ -1,6 +1,6 @@
 # Handoff — continuing the combined game
 
-Read this first, then `README.md` (how to run, controls, where things are, what was checked).
+Read this first, then `docs/DEVELOPER.md` (how to run, controls, where things are, what was checked). `README.md` is the product overview; `TRACKING.md` is the tracking plan.
 
 ## What this is
 
@@ -29,6 +29,8 @@ Add `?test` to the address in solo mode (or `TEST_MODE=1` for the server) for 50
 - **Game Room.** `shared/games.js` has three rule engines as pure functions on plain-JSON states (`Ludo`, `Cards`, `Werewolf`) and the table plug-in (`makeGameRoom`): seats → slots, lobby, host, computer players, 20-second clock, spectators, chat channels, results, saved games. `room.js` calls its `canSit / onSit / onStand / onTableChat`. It sends each player a **view** (`tro-choi.state`) with only what they may know, and everyone in the room a summary (`tro-choi.tables`). The client (`rooms/games.js`) draws the table card, lobby, chat and results and mounts one screen per game (`games/ludo.js`, `cards.js`, `werewolf.js`); a screen only renders views and sends clicks back (`tro-choi.move`). Colour Match is different: its rules (`games/match3.js`) run in the browser and the room only stores progress (`tro-choi.matchSave / matchDone`).
 - **Astrology Room.** `astro/` is pure maths (calendar, numerology, Tử Vi, western chart, places, the birth form's checks). `astro/report.js` turns a birth record into the reading as HTML strings, the same for the board and the downloaded file. `text/*.js` holds the passages, keyed by number / star / sign. The server half keeps one birth record per player name and has `server.mjs` add a CSV line per reading.
 - **Friends.** `room.js` (`friendAdd / friendAnswer / friendRemove / friends`) keeps `profile.friends` (garden id → name) on both sides; requests live in memory for two minutes. A garden id is `gidOf(token)`, so a friend's garden is found even when they are offline (`tokenOf`, `findGarden`). The client part is in `features.js` (player-card button, Friends panel).
+- **Tracking.** The rules call `this.ev(player, 'event', {...})` when something is accepted; `server.mjs` hands the events to `tracking.mjs` (memory + `data/events.jsonl`). `/stats.html` shows the numbers after the admin password. Events carry no names or text. The plan is `TRACKING.md`; a test fails if it and the code disagree.
+- **Android app.** `android/` is a one-screen WebView app that opens the live game and falls back to the packed copy of `public/` when offline. `bash android/build.sh` builds it without Gradle; the signing key in `android/keystore/` is not in Git.
 - Identifiers from Top1 are Vietnamese (`dungTheGioi`, `buocDi`, `PHONG`…); all player-facing text is English.
 
 ## Where to add things
@@ -36,6 +38,7 @@ Add `?test` to the address in solo mode (or `TEST_MODE=1` for the server) for 50
 | You want to… | Go to |
 |---|---|
 | give a room its own function | client: copy `public/js/rooms/template.js`, register in `rooms/index.js`; server: add a class to `REGISTRY` in `public/shared/roomplugins.js` |
+| track a new event | `this.ev(...)` in the rule, then `EVENTS` in `tracking.mjs` and a row in `TRACKING.md` |
 | add a message or rule | `public/shared/room.js` → `Room.prototype.handle`, then handle the reply in `main.js` (`ganMang`) or `features.js` (`onMessage`), and add a check to `tests/rules.test.mjs` |
 | change a game's rule or a computer player | `public/shared/games.js` (`Ludo`, `Cards`, `Werewolf`, each with a `bot`) + a check in `tests/games.test.mjs`; timings are `TURN_MS` and `WW_TIME` at the top |
 | change Colour Match levels | `LEVELS` in `public/js/games/match3.js` (then `node tests/match.test.mjs` proves every level can still be won) |
@@ -57,13 +60,14 @@ node tests/games.test.mjs            # 165 Game Room checks
 node tests/match.test.mjs            # 34 Colour Match checks
 node tests/astro.test.mjs && node tests/reading.test.mjs && node tests/text/all.check.mjs
 node --test tests/F*.test.js         # 55 map checks
+node tests/tracking.test.mjs         # 25 tracking checks
 node tests/multiplayer-smoke.mjs 5180   # with `PORT=5180 ADMIN_PASSWORD=admin node server.mjs` running (Node 22+)
 ```
 
 ## Decisions already made (do not undo without asking Khang)
 
 Node.js server · Top1's rooms (without the Garden Room, removed at Khang's request on 2026-11-15: the Quiet Forest stands at the plaza's east gate instead) plus the forest + private island · closed rooms like campus-export · English interface · Game Room with shared tables as in the spec plus solo practice with computer players · reading texts in English at the spec's length.
-Smaller choices and the reasons are in `README.md` → "Decisions".
+Smaller choices and the reasons are in `docs/DEVELOPER.md` → "Decisions".
 
 ## Not done yet
 
@@ -84,7 +88,7 @@ Put this folder in a shared Git repository (GitHub, private), one branch per fea
 
 ```
 You are continuing the game in this folder. Do not rewrite it or change the engine.
-1) Read HANDOFF.md and README.md, then the files named for the area you will touch.
+1) Read HANDOFF.md and docs/DEVELOPER.md, then the files named for the area you will touch.
 2) Rules about Xu, items, seats, cards, dice and roles go in public/shared/ (room.js, roomplugins.js, games.js); numbers go in catalog.js.
 3) Graphics follow Top1's style: toon material + ink outline (world.js helpers, v4kit.js). Player-facing text is English.
 4) Keep the decisions in HANDOFF.md. If the request conflicts with them or with the source projects, ask first.

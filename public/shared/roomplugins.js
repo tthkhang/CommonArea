@@ -94,6 +94,7 @@
     if (kind === 'add') {
       const why = this.queue.add(msg, player);
       if (why) return this.toast(player, why);
+      if (this.game.track) this.game.track(player, 'media_add', { where: 'cinema' });
       this.sendMembers(this.stateMsg());
     } else if (kind === 'remove') {
       const why = this.queue.remove(Number(msg.id), player);
@@ -155,6 +156,7 @@
     if (!birth || !this.game.checkBirth(birth)) { this.game.send(player.id, { type: this.id + '.saved', ok: false, msg: 'Those birth details are not complete.' }); return; }
     this.game.saveMeta(profileKey(player.name), birth);                      // editing overwrites the profile…
     this.game.saveReading({ t: now, player: player.name, birth });           // …and always ADDS a line to the class file
+    if (this.game.track) this.game.track(player, 'reading_made'); // the event carries no birth details
     const day = new Date(now).toDateString();
     if (player.pr && player.pr.astroDay !== day) { player.pr.astroDay = day; this.game.award(player, this.game.ECON.astroXu, 'astro', 'Astrology reading'); }
     this.game.send(player.id, { type: this.id + '.saved', ok: true, birth });

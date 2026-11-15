@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The plaza campfire: a cream stone base, a dark fire ring and a flame. Drawn inside the adaptive icon's safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFF4DC" android:strokeColor="#2B1F4D" android:strokeWidth="3"
+        android:pathData="M30,70a24,9 0 1,0 48,0a24,9 0 1,0 -48,0z" />
+    <path android:fillColor="#2B1F4D" android:pathData="M41,67a13,5 0 1,0 26,0a13,5 0 1,0 -26,0z" />
+    <path android:fillColor="#FFC43D" android:strokeColor="#2B1F4D" android:strokeWidth="3" android:strokeLineJoin="round"
+        android:pathData="M54,27C62,39 68,47 68,55C68,63 62,68 54,68C46,68 40,63 40,55C40,47 46,39 54,27Z" />
+    <path android:fillColor="#FF8A3D"
+        android:pathData="M54,44C58,50 61,54 61,58C61,63 58,65 54,65C50,65 47,63 47,58C47,54 50,50 54,44Z" />
+</vector>

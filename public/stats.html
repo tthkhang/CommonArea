@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Common Area — statistics</title>
+<style>
+  :root { --bg: #F4EEFF; --surface: #FFF9EE; --primary: #7A4DFF; --ink: #2B1F4D; --accent: #FFC43D; --muted: #6B6485; --line: #E3DAF7; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { margin: 0 0 2px; font-size: 26px; color: var(--primary); }
+  h2 { margin: 30px 0 10px; font-size: 17px; }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  .card { background: var(--surface); border: 2px solid var(--ink); border-radius: 16px; padding: 16px; box-shadow: 0 4px 0 var(--ink); }
+  form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  input[type=password] { flex: 1; min-width: 200px; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 12px; font: inherit; background: #fff; }
+  button { padding: 10px 16px; border: 2px solid var(--ink); border-radius: 12px; background: var(--accent); font: 700 15px system-ui, sans-serif; color: var(--ink); cursor: pointer; }
+  button.plain { background: #fff; }
+  #err { color: #C8323A; font-weight: 600; margin: 8px 0 0; min-height: 1.4em; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .tile { background: var(--surface); border: 2px solid var(--ink); border-radius: 14px; padding: 12px 14px; }
+  .tile b { display: block; font-size: 26px; line-height: 1.15; }
+  .tile span { color: var(--muted); font-size: 13px; }
+  .wrap { overflow-x: auto; background: var(--surface); border: 2px solid var(--ink); border-radius: 14px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td code { font-size: 13px; background: #F0E9FF; padding: 1px 5px; border-radius: 5px; }
+  .bar { height: 10px; border-radius: 6px; background: var(--primary); min-width: 2px; }
+  .zero { color: #A9A3BD; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .foot { color: var(--muted); font-size: 13px; margin-top: 26px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Common Area — statistics</h1>
+  <p class="sub">Anonymous play events (see TRACKING.md). For the team only: enter the admin password.</p>
+
+  <div id="gate" class="card">
+    <form id="f">
+      <input id="pw" type="password" autocomplete="current-password" placeholder="Admin password" required>
+      <button type="submit">Show statistics</button>
+    </form>
+    <p id="err"></p>
+  </div>
+
+  <div id="out" hidden>
+    <p class="sub" id="when"></p>
+    <div class="tiles" id="tiles"></div>
+
+    <h2>From first visit to friendship</h2>
+    <div class="wrap"><table id="funnel"></table></div>
+
+    <h2>Day by day (Vietnam time)</h2>
+    <div class="wrap"><table id="days"></table></div>
+
+    <div class="cols">
+      <div><h2>How players open the game</h2><div class="wrap"><table id="clients"></table></div></div>
+      <div><h2>Rooms entered</h2><div class="wrap"><table id="rooms"></table></div></div>
+      <div><h2>Table games started</h2><div class="wrap"><table id="games"></table></div></div>
+    </div>
+
+    <h2>Every event</h2>
+    <div class="wrap"><table id="totals"></table></div>
+
+    <h2>Latest events</h2>
+    <div class="wrap"><table id="recent"></table></div>
+
+    <p class="foot"><button class="plain" id="reload" type="button">Refresh</button> <button class="plain" id="save" type="button">Save these numbers as a file</button></p>
+    <p class="foot">On the free hosting plan the event log starts again from zero whenever the server sleeps, restarts or is redeployed.</p>
+  </div>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const ROOMS = { 'chiem-tinh': 'Astrology Room', 'tro-choi': 'Game Room', 'xem-phim': 'Cinema', 'phong-hop': 'Meeting Room', 'cua-hang': 'Shop & Wardrobe' };
+  const GAMES = { ludo: 'Ludo', cards: 'Colour Cards', werewolf: 'Werewolf' };
+  const CLIENTS = { 'web-desktop': 'Website on a computer', 'web-phone': 'Website on a phone', 'android-app': 'Android app', other: 'Other / unknown' };
+  let password = '', last = null;
+  const table = (id, head, rows) => { $(id).innerHTML = '<tr>' + head.map((h) => `<th class="${h[1] || ''}">${esc(h[0])}</th>`).join('') + '</tr>' + (rows.length ? rows.join('') : `<tr><td class="zero" colspan="${head.length}">Nothing yet.</td></tr>`); };
+  const counts = (id, obj, names, label) => { const rows = Object.entries(obj).sort((a, b) => b[1] - a[1]); table(id, [[label], ['Count', 'n']], rows.map(([k, n]) => `<tr><td>${esc(names[k] || k)}</td><td class="n">${n}</td></tr>`)); };
+  const time = (t) => new Date(t).toLocaleString();
+  function render(d) {
+    last = d; const o = d.overview;
+    $('when').textContent = d.since ? `${d.events} events since ${time(d.since)}. Read at ${time(d.generatedAt)}. Online now: ${d.online}.` : `No events yet. Online now: ${d.online}.`;
+    $('tiles').innerHTML = [[o.sessions, 'visits'], [o.players, 'different players'], [o.avgMinutes + ' min', 'average visit'], [o.medianMinutes + ' min', 'typical (median) visit'], [o.cameBackShare + '%', `came back on another day (${o.cameBackAnotherDay})`]]
+      .map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+    table('funnel', [['Step'], ['Players', 'n'], ['Share', 'n'], ['']], d.funnel.map((s) => `<tr><td>${esc(s.step)}</td><td class="n">${s.players}</td><td class="n">${s.share}%</td><td style="width:38%"><div class="bar" style="width:${s.share}%"></div></td></tr>`));
+    table('days', [['Day'], ['Visits', 'n'], ['Players', 'n'], ['New players', 'n']], d.days.map((x) => `<tr><td>${esc(x.day)}</td><td class="n">${x.sessions}</td><td class="n">${x.players}</td><td class="n">${x.newPlayers}</td></tr>`));
+    counts('clients', d.clients, CLIENTS, 'Opened with'); counts('rooms', d.rooms, ROOMS, 'Room'); counts('games', d.games, GAMES, 'Game');
+    table('totals', [['Event'], ['What it means'], ['Total', 'n'], ['Today', 'n'], ['Players', 'n']], d.totals.map((x) => `<tr class="${x.count ? '' : 'zero'}"><td><code>${esc(x.event)}</code></td><td>${esc(x.meaning)}</td><td class="n">${x.count}</td><td class="n">${x.today}</td><td class="n">${x.players}</td></tr>`));
+    table('recent', [['Time'], ['Event'], ['Player id'], ['Details']], d.recent.map((ev) => { const { t, e, s, u, ...rest } = ev; return `<tr><td>${esc(time(t))}</td><td><code>${esc(e)}</code></td><td>${esc(u || '—')}</td><td>${esc(Object.entries(rest).map(([k, v]) => k + ': ' + v).join(', '))}</td></tr>`; }));
+    $('gate').hidden = true; $('out').hidden = false;
+  }
+  async function load() {
+    $('err').textContent = '';
+    try {
+      const r = await fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { $('gate').hidden = false; $('out').hidden = true; $('err').textContent = d.error || 'The statistics could not be read.'; return; }
+      render(d);
+    } catch { $('err').textContent = 'The game server did not answer. Statistics exist only on the online game (server.mjs), not in solo mode.'; }
+  }
+  $('f').addEventListener('submit', (e) => { e.preventDefault(); password = $('pw').value; $('pw').value = ''; load(); });
+  $('reload').addEventListener('click', load);
+  $('save').addEventListener('click', () => { if (!last) return; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(last, null, 2)], { type: 'application/json' })); a.download = 'common-area-stats-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); });
+})();
+</script>
+</body>
+</html>

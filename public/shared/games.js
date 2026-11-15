@@ -476,7 +476,8 @@
     GameRoom.prototype.start = function (t) {
       const now = this.game.now(); const seats = Object.keys(t.slots).map(Number).sort((a, b) => a - b);
       for (const k of seats) if (t.slots[k].kind === 'npc' && !this.player(t.slots[k].id)) t.slots[k].id = null;
-      t.phase = 'play'; t.paid = false; t.mind = { suspect: null, found: {} }; t.talkAt = 0;
+      t.phase = 'play'; t.paid = false; t.mind = { suspect: null, found: {} }; t.talkAt = 0; t.startedAt = now;
+      if (this.game.track) { const hs = this.humans(t); for (const k of hs) this.game.track(this.player(t.slots[k].id), 'game_start', { game: t.game, humans: hs.length, bots: seats.length - hs.length }); }
       if (t.game === 'ludo') t.st = Ludo.create(seats);
       else if (t.game === 'cards') t.st = Cards.create(seats, this.rng);
       else t.st = Werewolf.create(seats.map((k) => ({ seat: k, name: t.slots[k].name })), now, this.rng, this.humans(t).length <= 1); // one person among computer players = solo practice
@@ -491,6 +492,7 @@
         const s = t.slots[k]; const p = this.present(s) ? this.player(s.id) : null; if (!p || !p.pr) continue;
         const g = (p.pr.stats.games = p.pr.stats.games || {}); const rec = (g[t.game] = g[t.game] || { played: 0, won: 0 }); rec.played++;
         p.dirty = true;
+        if (this.game.track) this.game.track(p, 'game_end', { game: t.game, won: winners.includes(k), minutes: t.startedAt ? Math.round((t.overAt - t.startedAt) / 6000) / 10 : null });
         if (!winners.includes(k)) continue;
         rec.won++; p.pr.stats.gamesWon = (p.pr.stats.gamesWon || 0) + 1;
         if (t.overAt - (p.lastGameWin || 0) >= E.gameCooldownSec * 1000) { p.lastGameWin = t.overAt; this.game.award(p, E.gameWin, 'game', t.title); } // Xu at most once per cooldown
@@ -606,6 +608,7 @@
           M.stars[level] = Math.max(M.stars[level] | 0, stars); M.best[level] = Math.max(M.best[level] | 0, score); M.save = null; player.dirty = true;
           const g = (player.pr.stats.games = player.pr.stats.games || {}); const rec = (g.match = g.match || { played: 0, won: 0 }); rec.played++; rec.won++;
           if (first) this.game.award(player, this.game.ECON.gameWin, 'game', 'Colour Match level ' + level);
+          if (this.game.track) this.game.track(player, 'match_level_done', { level, stars, first });
           return this.sendMatch(player);
         }
         return;

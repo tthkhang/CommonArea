@@ -195,6 +195,7 @@
     this.now = opts.now || (() => Date.now());
     this.checkAdmin = opts.checkAdmin || (() => false);
     this.onReport = opts.onReport || (() => {});
+    this.track = opts.track || null; // (event) => void. Anonymous usage events, kept by the server only (see TRACKING.md); solo mode tracks nothing
     this.players = new Map();
     this.seats = {}; // "tableId:idx" -> playerId
     this.chat = [];
@@ -224,7 +225,7 @@
     this.plugins = Plugins.loadRooms({ send: (to, m) => this.send(to, m), now: () => this.now(), players: this.players, system: (to, text) => this.system(to, text),
       award: (p, amount, reason, note) => this.award(p, amount, reason, note), saveReading: (row) => this.onReading(row), ECON,
       loadMeta: (k) => (this.store.loadMeta ? this.store.loadMeta(k) : null), saveMeta: (k, v) => { if (this.store.saveMeta) this.store.saveMeta(k, v); },
-      checkBirth: (b) => this.checkBirth(b),
+      checkBirth: (b) => this.checkBirth(b), track: (p, e, props) => this.ev(p, e, props),
       world: WORLD, solo: !!opts.solo, rng: opts.rng || Math.random,       // the Game Room: which tables it runs, and whether computer players may fill a Werewolf table
       allProfiles: () => (this.store.all ? [...this.store.all()] : []) }, WORLD.rooms);
     this.lastPlug = 0;
@@ -253,6 +254,13 @@
     return { type: 'music', queue: this.queue, current: this.current, serverNow: this.now() };
   };
 
+  /** One usage event (TRACKING.md). No names, no chat text, no birth details: `u` is the player's garden id (a made-up id), `s` this visit's connection id. */
+  Room.prototype.ev = function (p, e, props) {
+    if (!this.track || (p && p.bot)) return;
+    const o = { t: this.now(), e, s: p ? p.id : null, u: p && p.token && !p.guest ? gidOf(p.token) : null };
+    if (props) for (const k in props) o[k] = props[k];
+    try { this.track(o); } catch (err) { /* tracking must never break the game */ }
+  };
   Room.prototype.system = function (to, text) {
     this.send(to, { type: 'chat', system: true, text });
   };
@@ -278,8 +286,10 @@
     if (/^[a-f0-9]{16,40}$/.test(token)) {
       const busy = [...this.players.values()].some((q) => q.token === token && !q.guest);
       if (busy) { p.guest = true; p.pr = fixProfile(null); }
-      else { p.token = token; p.pr = fixProfile(this.store.load(token)); }
+      else { p.token = token; const saved = this.store.load(token); p.returning = !!saved; p.pr = fixProfile(saved); }
     }
+    p.joinedAt = this.now();
+    this.ev(p, 'session_start', { client: CLIENTS.includes(hello && hello.client) ? hello.client : 'other', returning: !!p.returning, guest: !!p.guest });
     this.players.set(id, p);
     this.send(id, {
       type: 'welcome', you: id, cap: this.cap, serverNow: this.now(),
@@ -307,6 +317,7 @@
     if (p.room) this.setRoom(p, null, true);
     this.freeSeat(p, true);
     this.saveProfile(p);
+    this.ev(p, 'session_end', { minutes: Math.round((this.now() - (p.joinedAt || this.now())) / 6000) / 10 });
     this.players.delete(id);
     if (p.token && !p.guest) this.friendsChanged(p, false);
     if (![...this.players.values()].some((q) => !q.bot)) for (const k in this.plugins) this.plugins[k].reset(); // everyone left: rooms forget their state
@@ -414,6 +425,7 @@
         if (!text || t - p.lastChat < 600) return;
         p.lastChat = t;
         const m = { type: 'chat', id: p.id, name: p.name, color: p.color, text, t };
+        this.ev(p, 'chat_sent', { channel: p.area === 'forest' ? 'forest' : 'all' });
         if (p.area === 'forest') { // quiet forest: Local chat only (people close by or at your table)
           m.local = true;
           const table = p.seat && p.seat.split(':')[0];
@@ -446,6 +458,7 @@
         p.y = 0; if (p.emote) { p.emote = null; this.send(null, { type: 'emote', id, emote: null }); }
         this.send(null, { type: 'seat', seat: key, id, seats: this.seats, x: s.x, z: s.z, ry: s.ry, y: s.y || 0 });
         this.tableSystem(tbl.id, p.name + ' sat down at ' + tbl.name + '.');
+        if (tbl.room !== 'tro-choi') this.ev(p, tbl.kind === 'cinema' ? 'cinema_sit' : 'study_sit', { place: tbl.room || (tbl.area === 'forest' ? 'forest' : 'plaza') }); // game tables report game_start instead
         if (plug && plug.onSit) plug.onSit(p, tbl.id, idx);
         break;
       }
@@ -460,6 +473,7 @@
         const tableId = p.seat.split(':')[0];
         const tb = WORLD.tables.find((x) => x.id === tableId); const plug = tb && tb.room && this.plugins[tb.room];
         if (plug && plug.onTableChat && plug.onTableChat(p, tableId, text)) break; // the room runs this table's chat itself (Werewolf nights are silent…)
+        this.ev(p, 'chat_sent', { channel: 'table' });
         const m = { type: 'tableChat', table: tableId, id: p.id, name: p.name, color: p.color, text, t };
         for (const pid of this.tableMembers(tableId)) this.send(pid, m);
         break;
@@ -476,6 +490,7 @@
         p.lastSong = t;
         const song = { id: 's' + this.nextSongId++, videoId, title: cleanText(msg.title, 90) || 'YouTube video', duration, by: id, byName: p.name };
         this.queue.push(song);
+        this.ev(p, 'media_add', { where: 'music' });
         this.send(null, { type: 'chat', system: true, text: p.name + ' added "' + song.title + '" to the music queue.' });
         if (!this.current) this.advance();
         else this.send(null, this.musicState());
@@ -509,7 +524,7 @@
         if (!target || target.id === id || t - p.lastReport < 5000) return;
         p.lastReport = t;
         const r = { from: p.name, fromId: id, target: target.name, targetId: target.id, reason: cleanText(msg.reason, 200), t };
-        this.onReport(r);
+        this.onReport(r); this.ev(p, 'report_filed');
         for (const q of this.players.values()) if (q.admin) this.send(q.id, Object.assign({ type: 'reportIn' }, r));
         this.system(id, 'Thanks — your report about ' + target.name + ' was sent to the admins.');
         break;
@@ -555,6 +570,7 @@
     p.room = room;
     const cur = room && this.plugins[room];
     if (cur) { cur.members.add(p.id); cur.onEnter(p); }
+    if (room) this.ev(p, 'room_enter', { room });
     if (silent) return;
     this.send(null, { type: 'room', id: p.id, room });
     this.sendSnapshot(p);
@@ -575,6 +591,7 @@
   // =====================================================================
   // v2: profiles + economy
   // =====================================================================
+  const CLIENTS = ['web-desktop', 'web-phone', 'android-app']; // how the player opened the game (sent by the browser in its hello)
   const FRIEND_MAX = 50, FRIEND_REQ_MS = 120000; // friends per player; how long a friend request waits for an answer
   function dayKey(t) { const d = new Date(t); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function fixProfile(pr) {
@@ -768,6 +785,8 @@
     p.area = dest.area; p.x = dest.x; p.z = dest.z; p.ry = dest.ry; p.moving = false; p.walkAcc = 0;
     p.gid = dest.area === 'garden' ? dest.gid : null;
     p.visiting = view ? gid : null;
+    if (view) this.ev(p, 'garden_visit', { kind: view.npc ? 'villager' : p.pr && p.pr.friends && p.pr.friends[gid] ? 'friend' : 'player' });
+    else if (dest.area !== 'campus' && to !== 'back') this.ev(p, 'area_enter', { area: dest.area === 'garden' ? 'my-garden' : dest.area });
     if (view) this.send(p.id, { type: 'gardenView', gid, owner: view.name, garden: view.garden, likes: view.likes, liked: this.likedToday(p, gid) });
     this.send(null, { type: 'area', id: p.id, area: p.area, x: p.x, z: p.z, ry: p.ry, gid: p.gid });
     const r = p.area === 'campus' ? WORLD.roomAt(p.x, p.z) : null; // coming back from the garden you may land inside a room
@@ -846,6 +865,7 @@
       else if (x.tok) { const pr = fixProfile(this.store.load(x.tok)); pr.friends = pr.friends || {}; pr.friends[y.gid] = { name: y.name }; this.store.save(x.tok, pr); }
     };
     link(a, b); link(b, a);
+    this.track && this.track({ t: this.now(), e: 'friend_accept', s: null, u: a.gid, with: b.gid });
   };
   Room.prototype.friendAdd = function (p, targetId) {
     const me = friendGid(p), t = this.now();
@@ -867,6 +887,7 @@
       return;
     }
     this.friendReqs.push({ from: me, fromId: p.id, fromTok: p.token, name: p.name, to: other, until: t + FRIEND_REQ_MS });
+    this.ev(p, 'friend_request');
     this.send(q.id, { type: 'friendRequest', gid: me, name: p.name });
     this.sendFriends(q);
     this.system(p.id, 'Friend request sent to ' + q.name + '.');
@@ -885,7 +906,7 @@
   };
   Room.prototype.friendRemove = function (p, gid) {
     const me = friendGid(p); if (!me || !p.pr.friends || !p.pr.friends[gid]) return;
-    delete p.pr.friends[gid]; p.dirty = true; this.sendFriends(p);
+    delete p.pr.friends[gid]; p.dirty = true; this.sendFriends(p); this.ev(p, 'friend_remove');
     const q = this.playerByGid(gid); // friendship is mutual: it ends on both sides
     if (q) { if (q.pr.friends) delete q.pr.friends[me]; q.dirty = true; this.sendFriends(q); }
     else { const tok = this.tokenOf(gid); const raw = tok && this.store.load(tok); if (raw) { const pr = fixProfile(raw); if (pr.friends) delete pr.friends[me]; this.store.save(tok, pr); } }
@@ -904,7 +925,7 @@
     if (target.npc) this.npcLikes[gid] = (this.npcLikes[gid] || 0) + 1;
     else if (target.live) { bump(target.live.pr); this.sendProfile(target.live); this.send(target.live.id, { type: 'sold', text: '❤️ ' + p.name + ' liked your garden', amount: Catalog.SOCIAL.likeXu }); }
     else { const pr = fixProfile(this.store.load(target.token)); bump(pr); this.store.save(target.token, pr); }
-    this.boardCache = null;
+    this.boardCache = null; this.ev(p, 'garden_like');
     this.send(p.id, { type: 'liked', gid, likes: target.likes + 1 });
   };
   Room.prototype.sendBoard = function (p) {
@@ -926,6 +947,7 @@
   Room.prototype.askQuiz = function (p, triesLeft) {
     const bank = Quiz.bank.length ? Quiz.bank : Quiz.SAMPLE;
     const i = Math.floor(Math.random() * bank.length), q = bank[i];
+    if (!p.quiz) this.ev(p, 'pomodoro_done'); // 25 focused minutes reached: the first question of this round
     p.quiz = { i, a: q.a, left: triesLeft, until: this.now() + ECON.quizTimeoutMin * 60000 };
     this.send(p.id, { type: 'quiz', q: q.q, o: q.o, src: q.src, left: triesLeft, bonus: ECON.pomodoroBonus });
   };
@@ -934,12 +956,13 @@
     if (this.now() > qz.until) { p.quiz = null; this.send(p.id, { type: 'quizResult', ok: false, text: 'Time is up.' }); return; }
     if (Number(msg.choice) === qz.a) {
       p.quiz = null;
-      this.send(p.id, { type: 'quizResult', ok: true, text: 'Correct! 🎉' });
+      this.send(p.id, { type: 'quizResult', ok: true, text: 'Correct! 🎉' }); this.ev(p, 'quiz_answer', { ok: true });
       this.award(p, ECON.pomodoroBonus, 'pomodoro');
     } else if (qz.left > 1) {
+      this.ev(p, 'quiz_answer', { ok: false });
       this.send(p.id, { type: 'quizResult', ok: false, retry: true, text: 'Not quite — try another question.' });
       this.askQuiz(p, qz.left - 1);
-    } else { p.quiz = null; this.send(p.id, { type: 'quizResult', ok: false, text: 'All ' + ECON.quizTries + ' answers wrong — better luck next time!' }); }
+    } else { p.quiz = null; this.ev(p, 'quiz_answer', { ok: false }); this.send(p.id, { type: 'quizResult', ok: false, text: 'All ' + ECON.quizTries + ' answers wrong — better luck next time!' }); }
   };
 
   // ---- daily garden upkeep (GDD §1): charged once per day you play, grows with your upgrades ----
@@ -1021,6 +1044,7 @@
     const fish = { uid: p.pr.nextUid++, sp: f.sp, size: f.size };
     p.pr.bag.push(fish);
     p.pr.stats.fishCaught = (p.pr.stats.fishCaught || 0) + 1;
+    this.ev(p, 'fish_caught', { tier: (Catalog.FISH[f.sp] || {}).tier || 0 });
     this.send(p.id, { type: 'fishResult', ok: true, fish });
     this.sendProfile(p);
     const info = Catalog.FISH[f.sp];
@@ -1040,7 +1064,7 @@
     p.pr.xu -= F.price;
     // a stronger buff replaces the current one; the same or a weaker one extends the time
     p.pr.buff = !cur || F.mult > cur.mult ? { mult: F.mult, until: t + F.min * 60000, icon: F.icon } : { mult: cur.mult, until: cur.until + F.min * 60000, icon: cur.icon };
-    this.logLine(p, 'buy', -F.price, F.name);
+    this.logLine(p, 'buy', -F.price, F.name); this.ev(p, 'food_buy', { item });
     this.send(p.id, { type: 'shopMsg', ok: true, text: F.icon + ' Delicious! Studying pays x' + p.pr.buff.mult + ' Xu for ' + Math.round((p.pr.buff.until - t) / 60000) + ' minutes' });
     this.send(p.id, { type: 'ate', item });
     this.sendProfile(p);
@@ -1091,7 +1115,7 @@
     } else return;
     if (pr.xu < price) { this.send(p.id, { type: 'shopMsg', ok: false, text: 'Not enough Xu (need ' + price + ').' }); return; }
     pr.xu -= price; apply();
-    this.logLine(p, 'buy', -price, label);
+    this.logLine(p, 'buy', -price, label); this.ev(p, 'shop_buy', { kind, cost: price });
     this.send(p.id, { type: 'shopMsg', ok: true, text: 'Bought ' + label + ' (−' + price + ' Xu)' });
     this.sendProfile(p);
   };
@@ -1263,6 +1287,7 @@
         addInv(pr, invKey, -1);
         coll[k] = { s: seed, at: t, bonus: 0, w: false, f: false };
         if (where === 'pot') coll[k].pt = g.potTypes[k] || 'clay'; // the pot it grows in (speed / extra-flower bonus)
+        this.ev(p, 'garden_plant', { where });
         break;
       }
       // ---- v5 farm animals: feed every hungry animal of a kind, collect a ready product ----
@@ -1345,7 +1370,7 @@
         pr.stats.harvested = (pr.stats.harvested || 0) + n;
         if (where === 'tree') { rec.at = t; rec.bonus = 0; rec.w = false; rec.f = false; rec.m = true; } // bears fruit again
         else delete coll[k];
-        this.send(p.id, { type: 'harvested', seed: rec.s, n, where, id: k });
+        this.send(p.id, { type: 'harvested', seed: rec.s, n, where, id: k }); this.ev(p, 'garden_harvest', { where });
         break;
       }
       case 'dig': { // remove a tree (no refund) to free the slot

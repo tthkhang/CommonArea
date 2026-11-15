@@ -54,7 +54,7 @@ export function initFeatures(ctx, extras) {
     gateArmed = exitArmed = false;
     if (act) endAct();
     garden.reset();
-    if (area === 'garden') garden.rebuild(); else state.visit = null;
+    if (area === 'garden') { extras.setGardenOwner(state.visit ? String(state.visit.owner).replace(/[’']s garden$/i, '') : ((me() || {}).name || 'My')); garden.rebuild(); } else state.visit = null; // the gate sign names whose farm this is
     stopFishing(true);
     const ci = $('#chatInput'); // forest = Local chat only (GDD §4)
     if (ci) ci.placeholder = area === 'forest' ? '🌲 Local chat — only people nearby / at your table can see it' : 'Press Enter to chat with everyone';

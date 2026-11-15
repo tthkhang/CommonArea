@@ -2,3 +2,6 @@
 data/
 .DS_Store
 node_modules/
+# Android app: the signing key and built files never go into the repository
+android/keystore/
+android/*.apk

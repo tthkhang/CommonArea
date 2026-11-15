@@ -1,0 +1,10 @@
+[
+ {"name":"Khang","token":"d0d0d0d0d0d0d0d0d0d0d0d0","xu":640,"garden":"npc-huy","inv":{"seed:carrot":6,"seed:tomato":4},"look":{"outfit":"#7A4DFF","hood":"down","hairStyle":"short","mouth":"smile","item":"book"}},
+ {"name":"Linh","token":"111111111111111111111111","xu":930,"garden":"npc-lan","look":{"outfit":"#FF7EB6","hood":"none","hairStyle":"long","hairA":"#5a3320","hairB":"#5a3320","mouth":"smile","eyeStyle":"happy","item":"flower","blush":true}},
+ {"name":"Minh","token":"222222222222222222222222","xu":410,"garden":"npc-minh","look":{"outfit":"#35C27A","hood":"none","hairStyle":"spiky","hairA":"#1b1b1b","hairB":"#1b1b1b","item":"book","glasses":true}},
+ {"name":"Thao","token":"333333333333333333333333","xu":520,"look":{"outfit":"#FFC43D","hood":"none","hairStyle":"bun","hairA":"#2a1a12","hairB":"#2a1a12","item":"book","mouth":"smile"}},
+ {"name":"Binh","token":"444444444444444444444444","xu":300,"look":{"outfit":"#3E8BFF","hood":"down","hairStyle":"short","hairA":"#1b1b1b","hairB":"#1b1b1b","item":"none"}},
+ {"name":"Chi","token":"555555555555555555555555","xu":280,"look":{"outfit":"#FF5A5F","hood":"none","hairStyle":"long","hairA":"#101010","hairB":"#101010","item":"none","eyeStyle":"round"}},
+ {"name":"Huy","token":"666666666666666666666666","xu":150,"look":{"outfit":"#20B2AA","hood":"up","item":"staff"}},
+ {"name":"An","token":"777777777777777777777777","xu":220,"look":{"outfit":"#F28A30","hood":"none","hairStyle":"split","item":"none","mouth":"open"}}
+]

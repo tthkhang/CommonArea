@@ -13,6 +13,7 @@ import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import * as MAP from './public/js/logic.js';
 import { readingSummary, validBirth } from './public/js/astro/birth.js';
+import { createTracker } from './tracking.mjs';
 
 const require = createRequire(import.meta.url);
 const Room = require('./public/shared/room.js');
@@ -33,6 +34,7 @@ if (!ADMIN_PASSWORD) console.warn('[warn] ADMIN_PASSWORD is not set — admin lo
 // ---------------- static files ----------------
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || '/').split('?')[0]);
+  if (p === '/api/stats') return statsApi(req, res);
   if (p === '/') p = '/index.html';
   const file = path.normalize(path.join(PUBLIC, p));
   if (!file.startsWith(PUBLIC)) { res.writeHead(403); return res.end(); }
@@ -69,7 +71,26 @@ const store = {
   loadMeta: (key) => (profiles['__' + key] ? clone(profiles['__' + key]) : null),
   saveMeta: (key, val) => { profiles['__' + key] = clone(val); later(); },
 };
-process.on('SIGINT', () => { if (writeTimer) { clearTimeout(writeTimer); flushProfiles(); } process.exit(0); });
+// ---------------- anonymous usage statistics (TRACKING.md): data/events.jsonl + the admin's page /stats.html ----------------
+const tracker = createTracker({ dir: DATA_DIR });
+let statsFails = [];
+function statsApi(req, res) {
+  const reply = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); };
+  if (req.method !== 'POST') return reply(405, { error: 'Use the stats page.' });
+  let body = ''; let tooBig = false;
+  req.on('data', (c) => { body += c; if (body.length > 2000) { tooBig = true; req.destroy(); } });
+  req.on('end', () => {
+    if (tooBig) return;
+    const now = Date.now(); statsFails = statsFails.filter((t) => now - t < 60000);
+    if (statsFails.length >= 10) return reply(429, { error: 'Too many wrong passwords. Wait a minute.' });
+    let pw = ''; try { pw = String(JSON.parse(body).password || ''); } catch { /* not JSON */ }
+    if (!ADMIN_PASSWORD) return reply(403, { error: 'The server has no ADMIN_PASSWORD, so the statistics are locked.' });
+    if (!pw || !safeEqual(pw, ADMIN_PASSWORD)) { statsFails.push(now); return setTimeout(() => reply(403, { error: 'Wrong password.' }), 400); }
+    reply(200, Object.assign(tracker.summary(now), { online: room.players.size }));
+  });
+}
+
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { if (writeTimer) { clearTimeout(writeTimer); flushProfiles(); } tracker.flush(); process.exit(0); }); // a host stops the server with SIGTERM
 
 // ---------------- Pomodoro quiz bank: sample questions + every "<!-- quiz -->" block in the wiki folder ----------------
 const WIKI_DIR = process.env.WIKI_DIR || path.join(__dirname, 'wiki');
@@ -133,6 +154,7 @@ const room = new Room({
   },
   checkAdmin: (pw) => !!ADMIN_PASSWORD && safeEqual(pw, ADMIN_PASSWORD),
   onReading: (r) => writeReading(r),
+  track: (ev) => tracker.track(ev),
   onReport: (r) => console.log(`[report] ${new Date(r.t).toISOString()} ${r.from} -> ${r.target}: ${r.reason || '(no reason)'}`),
 });
 setInterval(() => { try { room.tick(); } catch (e) { console.error('[rules] tick', e); } }, 100); // one bad tick must not stop the server for everyone

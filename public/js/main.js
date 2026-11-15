@@ -244,7 +244,8 @@ async function batDauChoi() {
 
   ganMang();
   dungBanDo(); dungNhanKhu(); ganDieuKhien(); apDungKichThuoc();
-  state.mode = await net.connect({ type: 'hello', name: profile.name, look: profile.look, token: profile.token });
+  const client = /; wv\)/.test(navigator.userAgent) ? 'android-app' : matchMedia('(pointer: coarse)').matches && Math.min(innerWidth, innerHeight) < 600 ? 'web-phone' : 'web-desktop'; // for the usage statistics (TRACKING.md)
+  state.mode = await net.connect({ type: 'hello', name: profile.name, look: profile.look, token: profile.token, client });
 }
 
 // ---------------------------------------------------------------- messages from the rules (server or solo)
