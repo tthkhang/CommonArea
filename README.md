@@ -9,8 +9,6 @@
 | **Demo video** | [docs/demo.mp4](docs/demo.mp4) (2 min 37 s: enter, study, play, friends, garden, forest) |
 | **Tracking plan** | [TRACKING.md](TRACKING.md) |
 
-![Common Area running in the Android app](docs/app-on-phone.png)
-
 ## The product
 
 ### The problem
