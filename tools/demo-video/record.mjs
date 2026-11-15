@@ -86,6 +86,7 @@ const moveCur = async (x, y) => { await ev(`${OVERLAY}; const c = document.getEl
 const clickAt = async (x, y) => { await moveCur(x, y); await ev(`const c = document.getElementById('demo-cur'); c.classList.remove('hit'); void c.offsetWidth; c.classList.add('hit'); return 1;`); timeline.clicks.push(Date.now()); await page.mouse('mousePressed', x, y); await sleep(70); await page.mouse('mouseReleased', x, y); await sleep(250); };
 const rectOf = (sel, text) => ev(`const all = [...document.querySelectorAll(${JSON.stringify(sel)})].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && !e.disabled; }); const e = ${text ? `all.find((x) => x.textContent.includes(${JSON.stringify(text)}))` : 'all[0]'}; if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
 const clickSel = async (sel, text, tries = 20) => { for (let i = 0; i < tries; i++) { const r = await rectOf(sel, text); if (r) { await clickAt(Math.round(r.x), Math.round(r.y)); return true; } await sleep(300); } log('!! not found:', sel, text || ''); return false; };
+const clickIdx = async (sel, idx) => { const r = await ev(`const all = [...document.querySelectorAll(${JSON.stringify(sel)})].filter((e) => e.getBoundingClientRect().width > 0); const e = all[${idx}]; if (!e) return null; const b = e.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 };`); if (!r) { log('!! not found:', sel, idx); return false; } await clickAt(Math.round(r.x), Math.round(r.y)); return true; };
 const type = async (text, delay = 70) => { for (const ch of text) { await page.send('Input.insertText', { text: ch }); await sleep(delay); } };
 const enter = () => page.key('Enter', 'Enter', 13, '\r');
 const G = (s) => ev(`const G = window.__game; ${s}`);
@@ -133,7 +134,7 @@ try {
   for (let i = 0; i < 3 && !(await G(`return !!G.me.seat;`)); i++) { await G(`G.nhanE(); return 1;`); await sleep(1300); } // E may first pick up a piece of litter lying next to the chair
   if (!(await G(`return !!G.me.seat;`))) { log('!! sit fallback'); await G(`G.net.send({ type: 'sit', table: 'ban-hoc-1', seat: 1 }); return 1;`); await sleep(800); }
   await sleep(900);
-  P.Minh.send({ type: 'tableChat', text: 'chapter 4 today?' }); await sleep(1500); P.Thao.send({ type: 'tableChat', text: 'yes, 25 minutes then a break 💪' }); await sleep(2500);
+  P.Minh.send({ type: 'tableChat', text: 'chapter 4 today?' }); await sleep(1500); P.Thao.send({ type: 'tableChat', text: 'yes, 25 minutes then a break 💪' }); await sleep(1300);
   await voiceDone();
   await stage('study');
 
@@ -153,8 +154,8 @@ try {
   await narrate('cards');
   await cap('The server is the referee: turns, a 20-second clock, table chat', null, 'head');
   const t0 = Date.now(); let said = false;
-  while (Date.now() - t0 < 30000) {
-    if (!said && Date.now() - t0 > 14000) { said = true; P.Binh.send({ type: 'tro-choi.chat', table: 'ban-bai-mau', text: 'nice one 😄' }); }
+  while (Date.now() - t0 < 15000) {
+    if (!said && Date.now() - t0 > 8000) { said = true; P.Binh.send({ type: 'tro-choi.chat', table: 'ban-bai-mau', text: 'nice one 😄' }); }
     if (await rectOf('.cc-chooser:not([hidden]) div button')) { await clickSel('.cc-chooser:not([hidden]) div button', null, 2); await sleep(700); continue; }
     if (await rectOf('.cc-one')) { await clickSel('.cc-one', null, 1); await sleep(400); continue; }
     const id = await ev(`const b = document.querySelector('.cc-slot.ok'); return b ? b.dataset.id : null;`);
@@ -168,10 +169,32 @@ try {
   // ---------------------------------------------------------- 5. friends
   await cap('');
   await ev(`const x = [...document.querySelectorAll('#lop-phu button, .modal button, button')].find((b) => b.getBoundingClientRect().width > 0 && /^(✕|×)$/.test(b.textContent.trim())); if (x) x.click(); return !!x;`); await sleep(500);
+  // ---------------------------------------------------------- 4b. the Astrology Room
+  await G(`G.toiKhu('chiem-tinh'); return 1;`); await sleep(2200);
+  await narrate('astro');
+  await cap('The Astrology Room: one birth form, three readings', 'numerology, a Tử Vi chart and a western star chart');
+  await walkTo(-14, -33.6); await sleep(500);
+  for (let i = 0; i < 3 && !(await ev(`return !!document.querySelector('.bf-go');`)); i++) { await G(`G.nhanE(); return 1;`); await sleep(1300); }
+  await waitFor(`document.querySelector('.bf-go')`, 6000); await cap(''); await sleep(400);
+  await clickIdx('.bf-wide', 0); await type('Minh Anh', 60);
+  await clickIdx('.bf-date input', 0); await type('14', 80); await clickIdx('.bf-date input', 1); await type('2', 80); await clickIdx('.bf-date input', 2); await type('2004', 80);
+  await clickIdx('input[aria-label=hour]', 0); await type('8', 80); await clickIdx('input[aria-label=minute]', 0); await type('30', 80);
+  await clickSel('.bf-seg button', 'Female');
+  await clickIdx('.bf-place input', 0); await type('da n', 90); await sleep(500); await clickSel('.bf-sugg button', null, 4); await sleep(500);
+  await stage('astro-form');
+  await voiceDone();
+  await clickSel('.bf-go'); await waitFor(`document.querySelector('.rb-tabs button')`, 12000); await sleep(900);
+  await narrate('astro2');
+  await cap('Built from the player\'s own numbers, stars and planets', null, 'low');
+  await sleep(2000); await clickIdx('.rb-tabs button', 1); await sleep(2200); await clickIdx('.rb-tabs button', 2); await sleep(2200);
+  await voiceDone();
+  await stage('astro-board');
+  await cap('');
+  await ev(`const x = [...document.querySelectorAll('button')].find((b) => b.getBoundingClientRect().width > 0 && /^(✕|×)$/.test(b.textContent.trim())); if (x) x.click(); return !!x;`); await sleep(500);
   await G(`G.toiKhu('chung'); return 1;`); await sleep(2400);
   await narrate('friends');
   await cap('Friends: click a player to send a friend request');
-  await P.Linh.walk(5.2, 4.2); P.Linh.say('Khang! add me and come see my garden 🌱'); await sleep(2200);
+  await P.Linh.walk(5.2, 4.2); P.Linh.say('Khang! add me and come see my garden 🌱'); await sleep(1400);
   const linh = await G(`const q = [...G.raw.players.values()].find((p) => p.name === 'Linh'); const cam = G.R.camera; cam.updateMatrixWorld(); const v = cam.position.clone().set(q.x, 0.9, q.z).project(cam); return { id: q.id, x: Math.round((v.x + 1) / 2 * innerWidth), y: Math.round((1 - v.y) / 2 * innerHeight), keys: Object.keys(q).join(',') };`); log('linh', JSON.stringify(linh));
   await clickAt(linh.x, linh.y); await waitFor(`!document.querySelector('#playerCard').classList.contains('hidden')`, 5000); await sleep(700);
   await stage('card');
@@ -182,19 +205,19 @@ try {
   await cap('Friends can visit each other\'s garden at any time', 'also when the friend is offline');
   await clickSel('#vcFriends'); await sleep(1600);
   await stage('friends');
-  await clickSel('#vcFriends2 [data-visit]'); await waitFor(`window.__game.raw.area === 'garden' && window.__game.raw.visit`, 12000); await sleep(3500);
+  await clickSel('#vcFriends2 [data-visit]'); await waitFor(`window.__game.raw.area === 'garden' && window.__game.raw.visit`, 12000); await sleep(2400);
   await stage('visit');
   await narrate('visit');
   await cap('Linh\'s garden: leave a like, it pays her Xu');
-  await G(`G.diToi(G.me.x + 5, G.me.z - 6); return 1;`); await sleep(3000);
-  await clickSel('#vcLike'); await sleep(2200);
+  await G(`G.diToi(G.me.x + 5, G.me.z - 6); return 1;`); await sleep(2200);
+  await clickSel('#vcLike'); await sleep(1500);
   await stage('like');
 
   // ---------------------------------------------------------- 6. my own garden
   await clickSel('#vcBack'); await waitFor(`window.__game.raw.area === 'campus'`, 12000); await sleep(1200);
   await narrate('garden');
   await cap('Xu from studying pays for your own island', 'crops, fruit trees, a fish tank, animals and a house to furnish');
-  await clickSel('#vcGarden'); await waitFor(`window.__game.raw.area === 'garden'`, 12000); await sleep(3500);
+  await clickSel('#vcGarden'); await waitFor(`window.__game.raw.area === 'garden'`, 12000); await sleep(2400);
   await stage('mygarden');
   await walkTo(-412, 1); await walkTo(-422, 1);
   await narrate('garden2');
@@ -225,7 +248,7 @@ try {
   await cap('');
   await narrate('end');
   await ev(`const e = document.getElementById('demo-end'); e.innerHTML = '<h1>Common Area</h1><p>Study, play and hang out together.</p><b>common-area.onrender.com</b><p style="font-size:20px;opacity:.8">In any browser, and as an Android app</p>'; e.classList.add('on'); document.getElementById('demo-cur').style.display = 'none'; return 1;`);
-  await voiceDone(1200);
+  await voiceDone(700);
   await stage('end');
 } catch (e) { if (e.message !== 'STOP') { console.error(e); try { await page.shot(shots + '/zz-error.jpg'); } catch {} } }
 cards.stop = true; cards.end = true;

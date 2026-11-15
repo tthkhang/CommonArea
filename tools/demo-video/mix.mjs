@@ -21,21 +21,32 @@ for (let i = 0; i < N; i++) {
   let v = 0; for (const n of CHORDS[bar % 4]) { const f = note(n); v += Math.sin(2 * Math.PI * f * t) * 0.5 + Math.sin(2 * Math.PI * f * 2 * t + 0.3) * 0.12 + Math.sin(2 * Math.PI * (f * 1.003) * t) * 0.3; }
   music[i] = v * 0.25 * (0.35 + 0.65 * env);
 }
-const BEAT = BAR / 4;
-for (let b = 0; b * BEAT < DUR; b++) { // bell: one chord note, two octaves up, with a long soft tail
-  const t0 = b * BEAT; const ch = CHORDS[Math.floor(t0 / BAR) % 4]; const f = note(ch[[0, 2, 1, 3][b % 4]] + 24); const len = Math.floor(1.6 * RATE); const o = Math.round(t0 * RATE);
-  for (let i = 0; i < len && o + i < N; i++) { const t = i / RATE; music[o + i] += (Math.sin(2 * Math.PI * f * t) + 0.25 * Math.sin(2 * Math.PI * f * 2 * t)) * Math.exp(-t * 3.2) * 0.55 * Math.min(1, t / 0.004); }
+const BEAT = BAR / 8; const TUNE = [0, 2, 1, 3, 2, 3, 1, 2]; // bells: a small rising-and-falling figure over each chord, eight notes a bar
+for (let b = 0; b * BEAT < DUR; b++) {
+  const t0 = b * BEAT; const ch = CHORDS[Math.floor(t0 / BAR) % 4]; const f = note(ch[TUNE[b % 8]] + 24); const len = Math.floor(1.4 * RATE); const o = Math.round(t0 * RATE); const g = b % 2 ? 0.34 : 0.55;
+  for (let i = 0; i < len && o + i < N; i++) { const t = i / RATE; music[o + i] += (Math.sin(2 * Math.PI * f * t) + 0.25 * Math.sin(2 * Math.PI * f * 2 * t)) * Math.exp(-t * 3.4) * g * Math.min(1, t / 0.004); }
+}
+for (let b = 0; b * BAR < DUR; b++) { // bass: the chord's root, an octave down, on the first and third beat
+  for (const off of [0, BAR / 2]) { const t0 = b * BAR + off; const f = note(CHORDS[b % 4][0] - 12); const len = Math.floor(2.6 * RATE); const o = Math.round(t0 * RATE);
+    for (let i = 0; i < len && o + i < N; i++) { const t = i / RATE; music[o + i] += (Math.sin(2 * Math.PI * f * t) + 0.3 * Math.sin(2 * Math.PI * f * 2 * t)) * Math.exp(-t * 1.3) * 0.6 * Math.min(1, t / 0.02); } }
 }
 
 // ---- the spoken walkthrough
 const voiceMask = new Float32Array(N); // 1 while someone speaks: the music steps back there
-for (const v of T.voice) { const w = readWav(`${VOICE}/${v.key}.wav`); const t = at(v.t); const g = 0.85 / Math.max(0.2, peak(w.ch[0]));
+const voicePeak = Math.max(0.2, ...T.voice.map((v) => peak(readWav(`${VOICE}/${v.key}.wav`).ch[0]))); // one gain for every line, so the voice keeps its own dynamics
+for (const v of T.voice) { const w = readWav(`${VOICE}/${v.key}.wav`); const t = at(v.t); const g = 0.85 / voicePeak;
   const src = w.rate === RATE ? w.ch[0] : (() => { const n = Math.floor(w.ch[0].length * RATE / w.rate); const o = new Float32Array(n); for (let i = 0; i < n; i++) { const p = i * w.rate / RATE; const a = Math.floor(p); o[i] = w.ch[0][a] + ((w.ch[0][a + 1] ?? w.ch[0][a]) - w.ch[0][a]) * (p - a); } return o; })();
   add(src, t, g); const a = Math.max(0, Math.round((t - 0.25) * RATE)), b = Math.min(N, Math.round((t + src.length / RATE + 0.35) * RATE)); for (let i = a; i < b; i++) voiceMask[i] = 1;
   report.push(`voice ${v.key.padEnd(9)} ${t.toFixed(1).padStart(6)} s  for ${(src.length / RATE).toFixed(1)} s`); }
-// smooth the mask (0.4 s) and lay the music under everything: full level 0.11, under speech 0.045, fading in and out at the ends
-{ let m = 0; const k = 1 / (0.4 * RATE); for (let i = 0; i < N; i++) { m += (voiceMask[i] - m) * k * 2.5; const t = i / RATE; const edge = Math.min(1, t / 1.5, (DUR - t) / 2.5); const g = (0.11 - 0.065 * Math.min(1, m)) * Math.max(0, edge); L[i] += music[i] * g; R[i] += music[i] * g; } }
+// smooth the mask (0.4 s) and lay the music under everything: full level 0.16, under speech 0.06, fading in and out at the ends
+{ let m = 0; const k = 1 / (0.4 * RATE); for (let i = 0; i < N; i++) { m += (voiceMask[i] - m) * k * 2.5; const t = i / RATE; const edge = Math.min(1, t / 1.5, (DUR - t) / 2.5); const g = (0.16 - 0.1 * Math.min(1, m)) * Math.max(0, edge); L[i] += music[i] * g; R[i] += music[i] * g; } }
 
+{ // how loud the voice is next to the music (so the balance can be judged without ears)
+  const rmsOf = (a) => { let e = 0; for (let i = 0; i < a.length; i++) e += a[i] * a[i]; return Math.sqrt(e / a.length); };
+  let ve = 0, vn = 0; for (const v of T.voice) { const w = readWav(`${VOICE}/${v.key}.wav`).ch[0]; for (let i = 0; i < w.length; i++) { const x = w[i] * 0.85 / voicePeak; if (Math.abs(x) > 0.01) { ve += x * x; vn++; } } }
+  const vr = Math.sqrt(ve / Math.max(1, vn)), mr = rmsOf(music);
+  report.push(`balance: voice ${(vr * 100).toFixed(1)} | music between lines ${(mr * 0.16 * 100).toFixed(1)} (${(20 * Math.log10(mr * 0.16 / vr)).toFixed(0)} dB vs voice) | music under the voice ${(mr * 0.06 * 100).toFixed(1)} (${(20 * Math.log10(mr * 0.06 / vr)).toFixed(0)} dB)`);
+}
 // ---- the game's own sounds
 for (const g of T.game || []) { const b = fs.readFileSync(g.file); const n = Math.floor(b.length / 4); const gl = new Float32Array(n), gr = new Float32Array(n);
   for (let i = 0; i < n; i++) { gl[i] = b.readInt16LE(i * 4) / 32768; gr[i] = b.readInt16LE(i * 4 + 2) / 32768; }
