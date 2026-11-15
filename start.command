@@ -1,5 +1,5 @@
 #!/bin/bash
-# Top 1 Server - double-click to play on this Mac.
+# Common Area - double-click to play on this Mac.
 # With Node.js: real multiplayer server (admin password "admin" unless ADMIN_PASSWORD is set).
 # Without Node.js: solo mode through Python (rules run in the browser, bots keep you company).
 cd "$(dirname "$0")"

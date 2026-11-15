@@ -1,5 +1,5 @@
 /*
- * Top 1 Server — economy catalog (Xu, crops, flowers, fruit trees, fish, tank decor, upgrades).
+ * Common Area — economy catalog (Xu, crops, flowers, fruit trees, fish, tank decor, upgrades).
  * Shared by the server (require) and the browser (window.VCCatalog). Pure data + tiny helpers.
  * Change numbers here to rebalance the game; no other file needs to change.
  */

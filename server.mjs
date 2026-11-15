@@ -1,4 +1,4 @@
-// Top 1 Server (combined game) — multiplayer server.
+// Common Area (combined game) — multiplayer server.
 // Zero dependencies: plain Node.js (18+) http server + a minimal WebSocket implementation (from campus-game-v4).
 // The rules are the same files the browser uses in solo mode: public/shared/*.js on the Top1 map (public/js/logic.js).
 //
@@ -216,7 +216,7 @@ server.on('error', (e) => {
 });
 server.on('listening', () => {
   const url = `http://localhost:${port}`;
-  console.log(`Top 1 Server running on ${url}  (max ${CAP} players${TEST_MODE ? ', TEST MODE' : ''})`);
+  console.log(`Common Area running on ${url}  (max ${CAP} players${TEST_MODE ? ', TEST MODE' : ''})`);
   console.log('Other computers on the same network: http://<this-computer-ip>:' + port);
   if (process.env.OPEN_BROWSER === '1') { // used by start.command / start.bat
     const cmd = process.platform === 'darwin' ? ['open', [url]] : process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]] : ['xdg-open', [url]];

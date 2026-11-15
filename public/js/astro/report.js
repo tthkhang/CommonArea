@@ -315,7 +315,7 @@ export function readingFile(reading, made = new Date()) {
   const h = reading.head;
   const body = reading.tabs.map((t) => `<h2 id="${t.id}">${t.icon} ${esc(t.title)}</h2>` + t.sections.map((s) => `<section class="rd-sec" id="${s.id}"><h3>${esc(s.title)}</h3>${s.html}</section>`).join('')).join('');
   const toc = reading.tabs.map((t) => `<li><a href="#${t.id}">${esc(t.title)}</a><ol>${t.sections.map((s) => `<li><a href="#${s.id}">${esc(s.title)}</a></li>`).join('')}</ol></li>`).join('');
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reading for ${esc(h.name)} — Top 1 Server</title><style>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reading for ${esc(h.name)} — Common Area</title><style>
 body{margin:0;background:#EFE3C2;color:#2B1F4D;font:16px/1.5 Georgia,"Times New Roman",serif}
 main{max-width:820px;margin:24px auto;background:#FFF9EA;border:3px double #B8892B;border-radius:6px;padding:28px 34px;box-shadow:0 8px 30px rgba(60,40,10,.25)}
 h1{font-size:30px;margin:0 0 4px;text-align:center}h2{margin:1.6em 0 .2em;padding-top:.6em;border-top:3px double #B8892B;font-size:26px}h3{margin:1.3em 0 .3em;font-size:19px;color:#5A2FE0}
@@ -325,5 +325,5 @@ footer{text-align:center;color:#7A6A4F;font-size:.85em;margin-top:2em;border-top
 ${READING_CSS}
 @media print{body{background:#fff}main{box-shadow:none;border:0;margin:0;max-width:none;padding:0}section,.rd-period,.tv-board,.sc-wrap,tr{break-inside:avoid}h2{break-before:page}h2:first-of-type{break-before:auto}@page{size:A4;margin:16mm}}
 </style></head><body><main><h1>Reading for ${esc(h.name)}</h1><p class="who">Born ${esc(h.date)} · ${esc(h.time)} · ${esc(h.place)}</p><p class="badges">${h.badges.map((x) => chip(x, 'gold')).join(' ')}</p><nav><ul>${toc}</ul></nav>${body}
-<footer>For reference and entertainment only. Made in the Astrology Room of Top 1 Server on ${longDate(made.getDate(), made.getMonth() + 1, made.getFullYear())}.</footer></main></body></html>`;
+<footer>For reference and entertainment only. Made in the Astrology Room of Common Area on ${longDate(made.getDate(), made.getMonth() + 1, made.getFullYear())}.</footer></main></body></html>`;
 }

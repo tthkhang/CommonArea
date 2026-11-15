@@ -1,5 +1,5 @@
 @echo off
-rem Top 1 Server - double-click to play on this computer (needs Node.js 18+ for multiplayer).
+rem Common Area - double-click to play on this computer (needs Node.js 18+ for multiplayer).
 cd /d "%~dp0"
 if "%ADMIN_PASSWORD%"=="" set "ADMIN_PASSWORD=admin"
 if "%PORT%"=="" set "PORT=5173"

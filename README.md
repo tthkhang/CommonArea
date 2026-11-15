@@ -1,4 +1,4 @@
-# Top 1 Server — combined game (demo)
+# Common Area — combined game (demo)
 
 One browser game made from the team projects and specs in the parent folder:
 
@@ -114,7 +114,7 @@ Smaller choices, decided without asking (easy to change):
 - Top1's click-to-walk, map and diorama camera are the default; campus-export's other points of view are on **C**.
 - v4's shop kiosk and outdoor lounge screen were dropped: Top1's Shop room, Garden Room stall, Cinema and Music Corner do those jobs.
 - v5 replaces v4's island and forest. Top1's Garden Room dock stays as one more fishing spot; a third food cart stands on the plaza; animal products are sold at the Shop; decorations placed on the old island go back into the bag when a profile is upgraded.
-- Capacity 100, walk speed 4 m/s, name "Top 1 Server", port 5173.
+- Capacity 100, walk speed 4 m/s, name "Common Area", port 5173.
 - **Astrology** (the spec's open questions, answered as it suggests): lunar dates with a leap-month box; 23:00–23:59 counts as the next day's Tý hour; the personal year changes on 1 January; Y is a vowel only when no other vowel is next to it; Life Path adds every digit and keeps 11 / 22 / 33; the lunar calendar is worked out in Vietnam time; houses are Placidus (Equal above 66° latitude); text lengths are the spec's "chữ" counts × 0.7 in English words.
 - **Games** (the spec's open questions, answered as it suggests): 10 Werewolf chairs; a dead player's role is shown at once; no stacking of +2 / +4; Ludo horses enter on a 6 or a 1. Also: the first face-up card in Colour Cards is always a number card; the Ludo host may end a game at any time (before anyone is home there is then no winner); Werewolves may whisper during the whole night; the bad-word list is a short starter list (English and Vietnamese) in `shared/games.js`.
 - Fixed while porting: v4 reset land upgrades above level 2 on every reload.

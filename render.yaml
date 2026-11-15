@@ -3,7 +3,7 @@
 # To keep progress: change plan to "starter" and uncomment the disk below (both cost money; the address stays the same).
 services:
   - type: web
-    name: top1-server
+    name: common-area
     runtime: node
     plan: free
     buildCommand: npm install
@@ -17,6 +17,6 @@ services:
       # - key: DATA_DIR
       #   value: /var/data
     # disk:
-    #   name: top1-data
+    #   name: common-area-data
     #   mountPath: /var/data
     #   sizeGB: 1

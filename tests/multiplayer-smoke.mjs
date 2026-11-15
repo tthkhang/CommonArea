@@ -22,7 +22,7 @@ function client(name, token) {
 
 // ---- static files
 const index = await fetch(base + '/');
-ok(index.status === 200 && (await index.text()).includes('Top 1 Server'), 'GET / serves the game page');
+ok(index.status === 200 && (await index.text()).includes('Common Area'), 'GET / serves the game page');
 for (const f of ['/shared/room.js', '/js/main.js', '/vendor/three.module.min.js', '/assets/icon-chung.svg', '/style.css']) { const r = await fetch(base + f); ok(r.status === 200, 'GET ' + f + ' -> 200 (' + r.headers.get('content-type') + ')'); }
 ok((await fetch(base + '/..%2F..%2Fserver.mjs')).status !== 200, 'cannot read files outside public/');
 

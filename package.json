@@ -1,8 +1,8 @@
 {
-  "name": "top1-server-combined-game",
+  "name": "common-area",
   "version": "1.0.0",
   "private": true,
-  "description": "Top 1 Server: a browser 3D campus game (plaza, rooms, farm, forest, Game Room, Astrology Room). No dependencies.",
+  "description": "Common Area: a browser 3D campus game (plaza, rooms, farm, forest, Game Room, Astrology Room). No dependencies.",
   "scripts": {
     "start": "node server.mjs",
     "solo": "python3 serve.py",

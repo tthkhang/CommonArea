@@ -6,7 +6,7 @@ After 25 focused minutes at a study table a player must answer one question to g
 (this stops auto-clickers).
 
 <!-- quiz -->
-Q: In Top 1 Server, what do you have to do to get the reward after 25 minutes of studying?
+Q: In Common Area, what do you have to do to get the reward after 25 minutes of studying?
 A) Just sit still
 B) Answer one multiple-choice question correctly
 C) Buy fertiliser

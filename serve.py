@@ -36,7 +36,7 @@ if __name__ == "__main__":
     if httpd is None:
         sys.exit("No free port found.")
     url = f"http://localhost:{port}"
-    print(f"Top 1 Server (solo mode) on {url}  -  Ctrl+C to stop")
+    print(f"Common Area (solo mode) on {url}  -  Ctrl+C to stop")
     if "--open" in sys.argv:
         import webbrowser
         webbrowser.open(url)

@@ -11,7 +11,7 @@ export const cardName = (c) => (c.c === 'w' ? CARD_NAME[c.v] : CARD_COLOR[c.c] +
 /** A card face ({ c, v }), or the back of a card (null). opts: { small, chosen (the colour picked for a wild) } */
 export function cardEl(card, opts = {}) {
   const n = el('div', { class: 'cc-card ' + (card ? 'c-' + card.c : 'back') + (opts.small ? ' small' : '') });
-  if (!card) { n.append(el('span', { class: 'cc-key' }), el('b', { class: 'cc-brand', text: 'Top 1 Server' })); return n; }
+  if (!card) { n.append(el('span', { class: 'cc-key' }), el('b', { class: 'cc-brand', text: 'Common Area' })); return n; }
   const label = card.v in SYMBOL ? SYMBOL[card.v] : card.v;
   n.title = cardName(card);
   n.append(el('i', { class: 'cc-corner', text: label || '★' }), el('span', { class: 'cc-oval' }, el('b', { text: label })), el('i', { class: 'cc-corner br', text: label || '★' }));

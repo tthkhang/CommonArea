@@ -1,5 +1,5 @@
 /*
- * Top 1 Server — quiz bank for the Pomodoro anti-cheat check (GDD §3).
+ * Common Area — quiz bank for the Pomodoro anti-cheat check (GDD §3).
  * After 25 focused minutes the player must answer one multiple-choice question to get the bonus.
  *
  * Sources (merged by the server):
@@ -25,7 +25,7 @@
     { q: 'In the LLM Wiki pattern, which file describes the rules / schema the AI follows to maintain the wiki?', o: ['README.md', 'CLAUDE.md', 'index.html', 'package.json'], a: 1, src: 'LLM Wiki' },
     { q: 'What does the "Active recall" method mean?', o: ['Rereading many times', 'Testing yourself by recalling what you learned', 'Underlining a lot', 'Listening to music while studying'], a: 1, src: 'Study tips' },
     { q: '"Spaced repetition" improves memory thanks to what?', o: ['Cramming all at once', 'Reviewing at gradually increasing intervals', 'Studying when sleepy', 'Only studying examples'], a: 1, src: 'Study tips' },
-    { q: 'In Top 1 Server, studying in the Quiet Forest multiplies your Xu by how much?', o: ['x1.1', 'x1.25', 'x2', 'No bonus'], a: 1, src: 'Game rules' },
+    { q: 'In Common Area, studying in the Quiet Forest multiplies your Xu by how much?', o: ['x1.1', 'x1.25', 'x2', 'No bonus'], a: 1, src: 'Game rules' },
     { q: 'How many times can a plant be watered per growing cycle?', o: ['1 time', '2 times', '3 times', 'Unlimited'], a: 0, src: 'Game rules' },
     { q: 'While in the Quiet Forest, which mode does the chat switch to?', o: ['Global', 'Local (nearby people)', 'Admin', 'Turned off'], a: 1, src: 'Game rules' },
     { q: 'In the Eisenhower matrix, which tasks should you do immediately?', o: ['Not important, not urgent', 'Important and urgent', 'Urgent but not important', 'Important but not urgent'], a: 1, src: 'Time management' },

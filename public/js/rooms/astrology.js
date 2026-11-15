@@ -228,7 +228,7 @@ export default {
     }
     function download(reading) {
       const blob = new Blob([readingFile(reading)], { type: 'text/html;charset=utf-8' });
-      const a = el('a', { href: URL.createObjectURL(blob), download: `reading-${keyOf(reading.head.name).replace(/[^\p{L}\p{N}]+/gu, '-') || 'top1server'}.html` });
+      const a = el('a', { href: URL.createObjectURL(blob), download: `reading-${keyOf(reading.head.name).replace(/[^\p{L}\p{N}]+/gu, '-') || 'common-area'}.html` });
       document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
       ui.toast('Your reading was saved as an HTML file.');
     }
